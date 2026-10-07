@@ -74,6 +74,14 @@ input[type=range]{accent-color:#e0447a;width:150px;touch-action:pan-y}
 .lv{display:block;width:100%;text-align:center;line-height:1.5}
 .lv small{display:block;font-size:13px;opacity:.9}
 #toast{position:fixed;left:50%;top:64px;transform:translateX(-50%);background:#000d;border:3px solid var(--gold);color:var(--gold);padding:10px 18px;border-radius:8px;z-index:50;display:none;font-size:18px;text-align:center;max-width:90vw;pointer-events:none;line-height:1.5}
+.dlgwrap{position:absolute;left:0;right:0;bottom:0;padding:10px}
+.dlg{max-width:780px;margin:0 auto;font-size:18px;line-height:1.7}
+.dlgname{color:var(--gold);font-size:20px;margin-bottom:6px}
+.dlgopts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.dlgopts .btn{text-align:left;font-size:17px}
+.gift{color:#7fe0ff;font-size:16px;display:block;margin-top:6px}
+#sDialog{background:#0007}
+.lv small b{color:var(--gold)}
 .hint{font-size:14px;opacity:.8;text-align:center;margin-top:10px}
 .big-title{font-size:20px;color:var(--pink)}
 .tag{display:inline-block;background:#000a;border:2px solid var(--gold);color:var(--gold);padding:2px 8px;border-radius:4px;font-size:14px}
@@ -98,12 +106,13 @@ input[type=range]{accent-color:#e0447a;width:150px;touch-action:pan-y}
 <!-- 標題 -->
 <div class="screen show" id="sTitle"><div class="wrap center">
   <h1>🦖 恐龍島大冒險 🦕</h1>
-  <p class="big-title">兩座島 × 30 個關卡 × 暴龍魔王</p>
+  <p class="big-title">五座島 × 60 個關卡 × 五大魔王</p>
   <canvas id="titleCv" width="360" height="150" style="image-rendering:pixelated;max-width:100%"></canvas>
   <div class="menu">
     <button class="btn big go" id="mContinue">▶ 繼續冒險</button>
     <button class="btn big pri" id="mNew">✨ 新遊戲（捏臉）</button>
     <button class="btn" id="mEdit">🎨 修改我的外型</button>
+    <button class="btn" id="mSave">💾 存檔代碼（換手機/電腦用）</button>
   </div>
   <p class="hint">電腦：方向鍵 / WASD 移動　J 或 空白鍵 攻擊　K 火球　L 或 Shift 閃避<br>手機：左邊搖桿（可八方向）、右邊按鈕</p>
 </div></div>
@@ -117,8 +126,8 @@ input[type=range]{accent-color:#e0447a;width:150px;touch-action:pan-y}
   </div>
   <div class="cre">
     <div class="pvbox card">
-      <canvas id="pvHead" width="240" height="288"></canvas>
-      <canvas id="pvBody" width="180" height="180" style="margin-top:8px"></canvas>
+      <canvas id="pvHead" width="240" height="340"></canvas>
+      <canvas id="pvBody" width="180" height="210" style="margin-top:8px"></canvas>
       <div class="row" style="justify-content:center"><button class="btn" id="cRand">🎲 隨機</button></div>
     </div>
     <div class="card" id="cOpts"></div>
@@ -141,6 +150,15 @@ input[type=range]{accent-color:#e0447a;width:150px;touch-action:pan-y}
   <p class="hint" id="shHint"></p>
 </div></div>
 
+<!-- 對話 -->
+<div class="screen" id="sDialog"><div class="dlgwrap"><div class="card dlg"><div class="dlgname" id="dlgName"></div><div id="dlgText"></div><div class="dlgopts" id="dlgOpts"></div></div></div></div>
+<!-- 港口 -->
+<div class="screen" id="sPort"><div class="wrap center"><h2>⛵ 港口 — 選擇目的地</h2><p class="hint" id="portHint"></p><div class="lvgrid" id="portGrid"></div><div class="menu"><button class="btn big" id="portBack">← 回村莊</button></div></div></div>
+<!-- 存檔代碼 -->
+<div class="screen" id="sSave"><div class="wrap center"><h2>💾 存檔代碼</h2>
+<p class="hint">「產生代碼」會複製你的進度；到另一台裝置貼上後按「匯入代碼」，就能接著玩。</p>
+<textarea id="saveText" rows="6" style="width:100%;max-width:640px;font-size:13px;background:#120c20;color:#fff7e0;border:3px solid #000;border-radius:6px;padding:8px;user-select:text;-webkit-user-select:text;touch-action:auto"></textarea>
+<div class="menu" style="flex-direction:row;flex-wrap:wrap;justify-content:center"><button class="btn" id="svExport">📤 產生代碼</button><button class="btn" id="svImport">📥 匯入代碼</button><button class="btn" id="svBack">← 返回</button></div></div></div>
 <!-- 選關 -->
 <div class="screen" id="sLevels"><div class="wrap center">
   <h2 id="lvTitle"></h2><p id="lvDesc" class="hint"></p>
@@ -182,12 +200,22 @@ setInterval(()=>{if(!musicOn||muted||musicMuted||!AC)return;mi++;if(mi%2===0)ton
 
 /* ============ 存檔 ============ */
 const KEY='dinoQuestSave_v2',OLDKEY='dinoQuestSave_v1';
-const DEF_LOOK={g:'m',shape:0,fw:0,skin:'#f6d3b3',hairStyle:0,hair:'#6b3f24',eyeStyle:0,eyeSize:2,eyeGap:2,eyeY:0,eye:'#3b82f6',browStyle:0,brow:'#4a2e1c',mouth:0,mouthY:0,blush:1};
+const DEF_LOOK={g:'m',species:0,shape:0,fw:0,skin:'#f6d3b3',hairStyle:0,hair:'#6b3f24',eyeStyle:0,eyeSize:2,eyeGap:2,eyeY:0,eye:'#3b82f6',browStyle:0,brow:'#4a2e1c',mouth:0,mouthY:0,blush:1,hat:0,hatColor:'#e0447a',glasses:0};
 let save=null;
 function loadSave(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.look)return s}catch(e){}
  try{const o=JSON.parse(localStorage.getItem(OLDKEY));if(o&&o.look)return newSave(o.look)}catch(e){}return null}
 function writeSave(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
-function newSave(look){return{look,gold:0,up:{weapon:0,armor:0,boots:0,fire:0,magnet:0},cleared:{},island:1,kills:0,gems:0}}
+function migrate(s){
+ if(!s.up)s.up={weapon:0,armor:0,boots:0,fire:0,magnet:0};
+ if(!s.cleared)s.cleared={};
+ if(!s.boss)s.boss={};if(!s.flags)s.flags={};if(!s.opened)s.opened={};
+ if(s.boss1){s.boss[1]=true;delete s.boss1}
+ if(s.boss2){s.boss[5]=true;delete s.boss2}
+ if(!s.v||s.v<3){if(s.island===2)s.island=5;s.v=3}
+ if(!s.island)s.island=1;
+ s.look=Object.assign({},DEF_LOOK,s.look);
+ return s}
+function newSave(look){return{look,gold:0,up:{weapon:0,armor:0,boots:0,fire:0,magnet:0},cleared:{},island:1,boss:{},flags:{},opened:{},v:3,kills:0,gems:0}}
 
 /* ============ 像素精靈工具 ============ */
 const OUT='#2b1d2e';
@@ -217,35 +245,67 @@ function mkR(c,u,ox,oy){
 const SHAPES=[[6,8,10,10,10,10,10,10,10,8,6],[8,10,10,10,10,10,10,10,10,10,8],[8,10,10,10,10,10,8,8,6,6,4]];
 function faceW(look){return SHAPES[look.shape].map(w=>clamp(w+look.fw*2,4,14))}
 function drawHead(r,look,dir){
- const wd=faceW(look),cx=7,hc=look.hair,hi=shade(hc,.25),sk=look.skin,st=look.hairStyle;
+ const wd=faceW(look),cx=7,hc=look.hair,hi=shade(hc,.25),sk=look.skin,st=look.hairStyle|0,spc=look.species|0;
+ const none=st===13;
  const span=(row,w,col)=>r(cx-w/2,row,w,1,col);
+ const dx=dir==='left'?-1:dir==='right'?1:0;
+ function hat(){
+  const h=look.hat|0;if(!h)return;const hcol=look.hatColor||'#e0447a',hd=shade(hcol,-.25),hl=shade(hcol,.3);
+  if(h===1){r(2,-2,10,3,hcol);r(5,-3,4,1,hcol);r(3,-2,3,1,hl);if(dir!=='up'){const bx=dir==='left'?0:dir==='right'?5:1,bw=dir==='down'?12:9;r(bx,1,bw,1,hd)}}
+  else if(h===2){r(2,-3,10,4,hcol);r(3,-4,8,1,hcol);r(4,-3,1,3,hl);r(7,-3,1,3,hl);r(10,-3,1,3,hl);r(1,0,12,2,hd);r(6,-6,2,2,'#fff');r(5,-5,1,1,'#fff');r(8,-5,1,1,'#fff')}
+  else if(h===3){r(4,-4,6,3,hcol);r(3,-3,1,2,hcol);r(10,-3,1,2,hcol);r(-1,-1,16,2,hd);r(-1,-2,2,1,hd);r(13,-2,2,1,hd);r(4,-2,6,1,'#8b5a2b')}
+  else if(h===4){const g='#ffd54a';r(3,-3,8,3,g);r(3,-5,2,2,g);r(6,-6,2,3,g);r(9,-5,2,2,g);r(3,-1,8,1,'#c98a12');r(6,-2,2,1,'#e0447a');r(4,-2,1,1,'#7fe0ff');r(9,-2,1,1,'#7fe0ff')}
+  else if(h===5){r(0,-1,14,2,hd);r(3,-3,8,2,hcol);r(4,-5,6,2,hcol);r(5,-7,4,2,hcol);r(6,-9,3,2,hcol);r(8,-10,3,1,hcol);r(6,-3,2,1,'#ffd54a');r(9,-6,1,1,'#ffd54a');r(3,-2,8,1,hd)}
+ }
+ function ears(){
+  if(spc===2){const pk='#ff9db0';r(2,-3,1,1,sk);r(2,-2,2,1,sk);r(2,-1,3,1,sk);r(3,-1,1,1,pk);r(11,-3,1,1,sk);r(10,-2,2,1,sk);r(9,-1,3,1,sk);r(10,-1,1,1,pk)}
+  else if(spc===1){const ec=shade(sk,-.3);r(1,1,2,2,ec);r(0,3,2,5,ec);r(11,1,2,2,ec);r(12,3,2,5,ec)}
+ }
  /* 後髮 */
- if(st===1){for(let y=2;y<=12;y++)span(y,wd[Math.min(y,10)]+2,hc);for(let y=12;y<=15;y++){r(1,y,2,1,hc);r(11,y,2,1,hc)}}
- if(st===2){const e=wd[5]/2;r(cx-e-3,4,3,8,hc);r(cx+e,4,3,8,hc);r(cx-e-3,12,2,1,hc);r(cx+e+1,12,2,1,hc);r(cx-e-3,3,3,1,'#ff6b9d');r(cx+e,3,3,1,'#ff6b9d')}
- if(st===5){const e=wd[4]/2;r(cx+e,1,2,3,'#ff6b9d');r(cx+e-1,3,4,9,hc);r(cx+e,12,2,1,hc)}
- if(st===3){r(cx-3,-4,6,3,hc);r(cx-2,-5,4,1,hc);r(cx-2,-4,2,1,hi)}
- if(st===4){for(const x of[-6,-3,0,3])r(cx+x,-3,2,2,hc),r(cx+x+1,-4,1,1,hc)}
- /* 脖子與臉 */
+ if(!none){
+  if(st===1){for(let y=2;y<=12;y++)span(y,wd[Math.min(y,10)]+2,hc);for(let y=12;y<=15;y++){r(1,y,2,1,hc);r(11,y,2,1,hc)}}
+  if(st===2){const e=wd[5]/2;r(cx-e-3,4,3,8,hc);r(cx+e,4,3,8,hc);r(cx-e-3,12,2,1,hc);r(cx+e+1,12,2,1,hc);r(cx-e-3,3,3,1,'#ff6b9d');r(cx+e,3,3,1,'#ff6b9d')}
+  if(st===5){const e=wd[4]/2;r(cx+e,1,2,3,'#ff6b9d');r(cx+e-1,3,4,9,hc);r(cx+e,12,2,1,hc)}
+  if(st===3){r(cx-3,-4,6,3,hc);r(cx-2,-5,4,1,hc);r(cx-2,-4,2,1,hi)}
+  if(st===4){for(const x of[-6,-3,0,3])r(cx+x,-3,2,2,hc),r(cx+x+1,-4,1,1,hc)}
+  if(st===8){span(-2,wd[0]+4,hc);for(let y=-1;y<=5;y++)span(y,wd[Math.max(0,Math.min(y,10))]+4,hc);r(cx-wd[5]/2-2,2,2,6,hc);r(cx+wd[5]/2,2,2,6,hc)}
+  if(st===9){for(let y=-5;y<=7;y++)span(y,y<0?Math.min(20,12+(y+5)*3):20,hc);r(cx-4,-4,3,1,hi)}
+  if(st===10){r(cx-1,-6,2,6,hc);r(cx-1,-6,1,1,hi)}
+  if(st===12){r(cx-1,-4,2,3,hc);r(cx-2,-2,4,1,'#ff6b6b')}
+ }
+ /* 臉 */
  for(let y=0;y<11;y++)span(y,wd[y],sk);
  r(cx-2,11,4,1,shade(sk,-.12));
  const ew=wd[5];r(cx-ew/2-1,5,1,2,sk);r(cx+ew/2,5,1,2,sk);
- const lowSk=shade(sk,-.1);span(10,wd[10],lowSk);
- /* 髮前半 */
- const cap=()=>{span(-1,wd[0]+2,hc);span(0,wd[1]+2,hc);span(1,wd[2]+2,hc);r(cx-3,-1,3,1,hi);r(cx+1,0,2,1,hi)};
+ span(10,wd[10],shade(sk,-.1));
+ if(spc===1)r(cx-3+dx,7,6,3,shade(sk,.3));
  if(dir==='up'){
-  for(let y=-1;y<=9;y++)span(y,wd[Math.max(0,y)]+2,hc);
-  r(cx-3,0,3,1,hi);r(cx+1,2,2,1,hi);
-  if(st===1)for(let y=10;y<=12;y++)span(y,wd[10],hc);
-  return;
+  if(!none){
+   for(let y=-1;y<=9;y++)span(y,wd[Math.max(0,y)]+2,hc);
+   r(cx-3,0,3,1,hi);r(cx+1,2,2,1,hi);
+   if(st===1)for(let y=10;y<=12;y++)span(y,wd[10],hc);
+  }
+  hat();ears();return;
  }
- cap();
- span(2,wd[3],hc);
- if(st!==4){r(cx-1,2,2,1,sk)}
- r(cx-wd[4]/2,3,2,2,hc);r(cx+wd[4]/2-2,3,2,2,hc);
- if(st===4){r(cx-wd[3]/2,3,1,1,hc);r(cx,3,1,1,hc);r(cx+wd[3]/2-1,3,1,1,hc)}
- if(st===0||st===4||st===3){r(cx-wd[5]/2-1,2,1,5,hc);r(cx+wd[5]/2,2,1,5,hc)}
+ /* 前髮 */
+ if(!none){
+  const cap=()=>{span(-1,wd[0]+2,hc);span(0,wd[1]+2,hc);span(1,wd[2]+2,hc);r(cx-3,-1,3,1,hi);r(cx+1,0,2,1,hi)};
+  if(st===10){r(cx-3,-1,6,1,hc);r(cx-4,0,8,1,hc)}
+  else if(st===6){span(-1,wd[0],hc);span(0,wd[1]+2,hc);span(1,wd[2]+2,hc);r(cx-wd[3]/2,2,1,2,hc);r(cx+wd[3]/2-1,2,1,2,hc);r(cx-3,-1,3,1,hi)}
+  else{
+   cap();
+   if(st===7){r(cx-wd[3]/2,2,wd[3]-3,1,hc);r(cx-wd[4]/2,3,2,1,hc);r(cx+wd[3]/2-1,2,1,1,hc)}
+   else if(st===11){span(2,wd[3],hc);span(3,wd[4],hc);r(cx-wd[5]/2,4,2,4,hc);r(cx+wd[5]/2-2,4,2,4,hc)}
+   else{
+    span(2,wd[3],hc);
+    if(st!==4){r(cx-1,2,2,1,sk)}
+    r(cx-wd[4]/2,3,2,2,hc);r(cx+wd[4]/2-2,3,2,2,hc);
+    if(st===4){r(cx-wd[3]/2,3,1,1,hc);r(cx,3,1,1,hc);r(cx+wd[3]/2-1,3,1,1,hc)}
+    if(st===0||st===4||st===3||st===8||st===12){r(cx-wd[5]/2-1,2,1,5,hc);r(cx+wd[5]/2,2,1,5,hc)}
+   }
+  }
+ }
  /* 五官 */
- const dx=dir==='left'?-1:dir==='right'?1:0;
  const eRow=5+look.eyeY,eh=look.eyeSize;
  const g=Math.max(1,Math.min(look.eyeGap,wd[eRow]/2-2));
  const lx=cx-g-2+dx,rx=cx+g+dx;
@@ -256,7 +316,7 @@ function drawHead(r,look,dir){
   r(x,eRow,2,h,ec);r(x,eRow,2,1,dark);r(x,eRow+h-1,2,1,shade(ec,-.3));
   r(flip?x:x+1,eRow+1,1,1,'#fff');
   if(look.eyeStyle===2)r(flip?x+1:x,eRow+h-2,1,1,'#fff');
-  if(look.g==='f')r(flip?x+2:x-1,eRow,1,1,dark);
+  if(look.g==='f'&&spc===0)r(flip?x+2:x-1,eRow,1,1,dark);
  };
  eye(lx,false);eye(rx,true);
  const bRow=eRow-2,bc=look.brow;
@@ -270,7 +330,18 @@ function drawHead(r,look,dir){
  if(look.mouth===0){r(mx-1,mRow+1,2,1,mc);r(mx-2,mRow,1,1,mc);r(mx+1,mRow,1,1,mc)}
  else if(look.mouth===1){r(mx-2,mRow,4,1,mc);r(mx-1,mRow+1,2,1,mc);r(mx-1,mRow+1,2,1,'#ff7a8a')}
  else{r(mx-1,mRow,2,2,mc);r(mx-1,mRow+1,1,1,'#ff7a8a')}
+ if(spc===1){r(mx-1,7,2,1,dark)}
+ if(spc===2){r(mx-1,7,2,1,'#ff8aa0');const lw=cx-wd[8]/2,rw=cx+wd[8]/2;r(lw-1,8,2,1,dark);r(rw-1,8,2,1,dark);r(lw-1,9,2,1,dark);r(rw-1,9,2,1,dark)}
  if(look.blush){const by=eRow+eh;const bl='rgba(255,90,120,.6)';r(lx-1,by,2,1,bl);r(rx+1,by,2,1,bl)}
+ /* 眼鏡 */
+ const gl=look.glasses|0,fr='#1a1a28';
+ if(gl===1){r(lx-1,eRow,4,eh,fr);r(rx-1,eRow,4,eh,fr);r(lx+3,eRow,Math.max(0,rx-lx-4),1,fr);r(lx-1,eRow,2,1,'#7a7a9a');r(rx-1,eRow,2,1,'#7a7a9a')}
+ else if(gl===2){
+  for(const x of[lx,rx]){r(x-1,eRow-1,4,1,fr);r(x-1,eRow+eh,4,1,fr);r(x-1,eRow-1,1,eh+2,fr);r(x+2,eRow-1,1,eh+2,fr);r(x,eRow,2,eh,'rgba(200,235,255,.35)')}
+  r(lx+3,eRow,Math.max(0,rx-lx-4),1,fr)}
+ else if(gl===3){r(lx-1,eRow,4,eh,'#ff5a9a');r(rx-1,eRow,4,eh,'#ff5a9a');r(lx+3,eRow,Math.max(0,rx-lx-4),1,'#c0307a');r(lx-1,eRow,2,1,'#ffc0dc');r(rx-1,eRow,2,1,'#ffc0dc');r(lx-1,eRow-1,4,1,'#c0307a');r(rx-1,eRow-1,4,1,'#c0307a')}
+ else if(gl===4){r(rx-1,eRow-1,4,eh+1,fr);r(2,eRow-2,10,1,fr);r(lx+3,eRow-2,1,2,fr)}
+ hat();ears();
 }
 const ARMOR=[{c:'#4a90e2',c2:'#3a74c0',belt:'#8b5a2b',pad:null,em:null},{c:'#a0703c',c2:'#835a2e',belt:'#5a3a1b',pad:null,em:'#ffd54a'},
  {c:'#9aa7b5',c2:'#7d8a99',belt:'#4a5563',pad:'#cfd8e3',em:'#ff5a5a'},{c:'#f2c94c',c2:'#d4a82a',belt:'#8b5a2b',pad:'#fff1a8',em:'#e0447a'},
@@ -279,9 +350,10 @@ const ARMOR=[{c:'#4a90e2',c2:'#3a74c0',belt:'#8b5a2b',pad:null,em:null},{c:'#a07
 const BOOT=['#6b4a2b','#a0703c','#9aa7b5','#f2c94c','#4fd8e8','#ff6b9d','#ff7a3d'];
 const BLADE=['#b0793e','#cfd6de','#e8eef5','#ffd54a','#6ef0ff','#ff7a3d','#ff6bd6','#ffffff','#ffe96e'];
 function drawPlayerBody(c,s,ox,oy,dir,fr,look,up){
- const{R}=mkR(c,s,ox,oy);const A=ARMOR[up.armor],fem=look.g==='f';
+ const{R}=mkR(c,s,ox,oy+6*s);const A=ARMOR[up.armor],fem=look.g==='f',spc=look.species|0;
  const cc=(up.armor===0&&fem)?'#ff7fa8':A.c,c2=(up.armor===0&&fem)?'#e0608a':A.c2,sk=look.skin;
  const l1=fr===1?1:0,l2=fr===2?1:0,a1=fr===1?-1:fr===2?1:0;
+ const tw=fr===1?1:0;if(spc===1){R(20,19+tw,2,2,sk);R(21,17+tw,2,3,sk)}else if(spc===2){R(19,23,3,1,sk);R(21,20+tw,1,3,sk);R(20,19+tw,2,1,sk)}
  R(12,24,3,4-l1,sk);R(16,24,3,4-l2,sk);R(12,26-l1,3,2,BOOT[up.boots]);R(16,26-l2,3,2,BOOT[up.boots]);
  R(11,17,8,7,cc);R(11,17,8,1,shade(cc,.25));
  if(fem){R(10,22,10,3,c2);R(10,24,10,1,shade(c2,-.2));R(14,18,2,2,'#ff6b9d')}else R(11,22,8,1,A.belt);
@@ -294,20 +366,36 @@ let PCACHE={};
 function invalidate(){PCACHE={}}
 function playerSprite(dir,fr){
  const k=dir+fr;if(PCACHE[k])return PCACHE[k];
- return PCACHE[k]=mkSprite(60,60,c=>drawPlayerBody(c,2,0,0,dir,fr,save.look,save.up),30,56);
+ return PCACHE[k]=mkSprite(60,72,c=>drawPlayerBody(c,2,0,0,dir,fr,save.look,save.up),30,68);
 }
 
 /* ============ 恐龍精靈 ============ */
 const DEFS={
- bronto:{name:'小腕龍',hp:12,spd:26,r:13,h:30,gem:2},
- tric:{name:'小三角龍',hp:20,spd:30,r:14,h:30,gem:3},
- stego:{name:'小劍龍',hp:28,spd:20,r:15,h:30,gem:3},
- raptor:{name:'小盜龍',hp:9,spd:62,r:11,h:26,gem:2},
- ptero:{name:'小翼龍',hp:10,spd:70,r:12,h:26,gem:3,fly:true},
- trex:{name:'暴龍王',hp:600,spd:38,r:30,h:70,gem:0,boss:true},
- ankylo:{name:'小甲龍',hp:34,spd:20,r:14,h:28,gem:3},
- pachy:{name:'小肿頭龍',hp:26,spd:30,r:13,h:30,gem:3},
- trex2:{name:'冰霜暴龍王',hp:900,spd:44,r:30,h:70,gem:0,boss:true}
+ bronto:{name:'小腕龍',hp:12,spd:26,r:13,h:30,ai:'wander'},
+ tric:{name:'小三角龍',hp:20,spd:30,r:14,h:30,ai:'charge'},
+ stego:{name:'小劍龍',hp:28,spd:20,r:15,h:30,ai:'shoot',col:'#ff9bd0'},
+ raptor:{name:'小盜龍',hp:9,spd:62,r:11,h:26,ai:'chase'},
+ ptero:{name:'小翼龍',hp:10,spd:70,r:12,h:26,ai:'dive',fly:true},
+ ankylo:{name:'小甲龍',hp:34,spd:20,r:14,h:28,ai:'charge'},
+ pachy:{name:'小肿頭龍',hp:26,spd:30,r:13,h:30,ai:'charge'},
+ mosa:{name:'小滄龍',hp:14,spd:52,r:13,h:26,ai:'chase'},
+ plesio:{name:'小蛇頸龍',hp:26,spd:22,r:14,h:34,ai:'shoot',col:'#7fd8ff'},
+ ichthy:{name:'小魚龍',hp:12,spd:66,r:12,h:24,ai:'dive',fly:true},
+ ammon:{name:'菊石寶寶',hp:40,spd:14,r:14,h:28,ai:'wander'},
+ trilo:{name:'小三葉蟲',hp:22,spd:34,r:13,h:22,ai:'charge'},
+ beetle:{name:'巨甲蟲',hp:30,spd:24,r:14,h:28,ai:'wander'},
+ millipede:{name:'巨馬陸',hp:18,spd:48,r:14,h:22,ai:'chase'},
+ dragonfly:{name:'巨蜻蜓',hp:10,spd:74,r:12,h:24,ai:'dive',fly:true},
+ scorp:{name:'小巨蠍',hp:28,spd:28,r:13,h:26,ai:'charge'},
+ dimetro:{name:'小異齒龍',hp:30,spd:22,r:15,h:34,ai:'shoot',col:'#ffb347'},
+ rhampho:{name:'長尾翼龍',hp:11,spd:72,r:12,h:26,ai:'dive',fly:true},
+ archaeo:{name:'始祖鳥',hp:12,spd:60,r:12,h:28,ai:'chase',fly:true},
+ quetzal:{name:'小風神翼龍',hp:24,spd:30,r:15,h:30,ai:'shoot',fly:true,col:'#e8f4ff'},
+ trex:{name:'暴龍王',hp:600,spd:38,r:30,h:70,boss:true,atk:['cwind','jump','spit'],spit:2,bar:'#e0447a',col:'#ff8a3d',mark:'#ff9a6a'},
+ mosaB:{name:'滄龍王',hp:750,spd:40,r:30,h:66,boss:true,atk:['cwind','spit','rain'],spit:3,bar:'#3fc0b8',col:'#7fd8ff',mark:'#78c8ff'},
+ scorpB:{name:'巨蠍王',hp:800,spd:42,r:30,h:62,boss:true,atk:['cwind','jump','rain'],spit:2,bar:'#d9604a',col:'#ffb347',mark:'#ffb36a'},
+ quetzB:{name:'風神翼龍王',hp:850,spd:44,r:30,h:70,hover:16,boss:true,atk:['jump','spit','rain'],spit:3,bar:'#ffcf5a',col:'#e8f4ff',mark:'#ffffff'},
+ trex2:{name:'冰霜暴龍王',hp:900,spd:44,r:30,h:70,boss:true,atk:['cwind','jump','spit','rain'],spit:4,bar:'#4fb0ff',col:'#9fe0ff',mark:'#78c8ff'}
 };
 function drawDino(c,type,fr,u,ox,oy){
  const{R,E}=mkR(c,u,ox,oy);const K=OUT,W='#fff',P='#ff9db0';
@@ -341,6 +429,91 @@ function drawDino(c,type,fr,u,ox,oy){
   E(0,1,4,4,B);E(0,3,3,2,'#e0f5ff');R(-7,2,3,1,D);
   E(5,-2,3,3,B);R(8,-2,4,1,Bk);R(8,-1,3,1,Bk);R(1,-5,3,1,C);R(0,-4,1,1,C);
   eye(6,-3);R(5,-1,2,1,P);R(-1,5,1,2,Bk);R(1,5,1,2,Bk);
+
+ }else if(type==='mosa'){
+  const B='#3fc0b8',D='#2a8f9a',L='#d8fff4';
+  R(-5,7,3,2,D);R(2,7,3,2,D);E(-11,4,3,2,B);R(-15,1,2,6,D);
+  E(-2,4,9,3,B);E(-2,6,6,1,L);R(-3,0,4,2,D);
+  E(9,3,3,3,B);R(11,5,3,1,B);eye(9,1);R(9,4,2,1,P);R(12,4,1,1,W);R(13,4,1,1,W);
+ }else if(type==='plesio'){
+  const B='#69b8ff',D='#3d86d8',L='#e0f2ff';
+  R(-6,7,3,2,D);R(3,7,3,2,D);E(-9,5,3,1,B);R(-12,4,3,1,B);
+  E(-1,4,7,4,B);E(-1,6,5,2,L);E(4,-1,2,5,B);R(3,-6,3,3,B);E(6,-8,3,2,B);eye(7,-9);R(5,-6,2,1,P);R(9,-7,1,1,'#c0507a');
+ }else if(type==='ichthy'){
+  const B='#7a9ac8',D='#506a98',L='#e8f0ff';
+  R(-10,-1,2,3,D);R(-9,1,2,4,D);R(-10,5,2,3,D);
+  E(-1,3,8,4,B);E(-1,5,6,2,L);R(7,3,5,1,B);R(0,-2,3,3,D);R(-1,6,3,2,D);
+  eye(5,1);R(4,3,2,1,P);R(11,3,1,1,'#c0507a');
+ }else if(type==='ammon'){
+  const S='#f2a65a',D='#d9783a',L='#ffd9a8';
+  E(-1,2,7,7,S);E(-1,2,5,5,D);E(-1,2,3,3,S);E(-1,2,1,1,D);
+  E(8,6,3,3,L);R(9,2,1,3,L);R(11,3,1,3,L);R(9,1,2,2,K);R(10,1,1,1,W);R(11,2,2,2,K);R(8,7,2,1,P);
+ }else if(type==='trilo'){
+  const B='#b48ae8',D='#7a56b8',L='#e8d8ff';
+  R(-6,7,2,2,D);R(-2,7,2,2,D);R(2,7,2,2,D);
+  E(0,4,9,4,B);for(const k of[-6,-3,0,3])R(k,0,1,8,D);E(0,6,6,1,L);
+  E(8,4,3,3,D);eye(8,2);R(8,5,2,1,P);
+ }else if(type==='dragonfly'){
+  const B='#5fd08a',D='#2f9a5a',Wg='#cfffe8',Rd='#ff6b6b';
+  if(fr){for(let k=0;k<6;k++)R(-4,-1-k,8-k,1,Wg)}else{for(let k=0;k<5;k++)R(-4,3+k,8-k,1,Wg)}
+  R(-11,1,13,2,B);for(let k=-10;k<2;k+=3)R(k,1,1,2,D);
+  E(4,2,3,3,B);R(5,0,4,3,Rd);eye(6,1);R(5,4,2,1,P);
+ }else if(type==='millipede'){
+  const B='#d98a4a',D='#a05a2a';
+  for(let i=0;i<5;i++){const x=-9+i*4,o=(i+fr)%2;R(x,7,1,2+o,K);E(x,4-o,2,2,i%2?B:D)}
+  E(11,3,3,3,B);eye(11,1);R(11,4,2,1,P);R(12,-1,1,3,D);R(14,-1,1,3,D);
+ }else if(type==='beetle'){
+  const B='#4fb89a',D='#2a8070',L='#c8fff0';
+  R(-6,8,2,fr?1:2,K);R(1,8,2,fr?2:1,K);
+  E(-1,3,7,5,B);R(-1,-2,1,11,D);E(-4,1,2,1,L);E(2,1,2,1,L);
+  E(8,4,3,3,D);R(9,0,1,4,D);R(10,-2,2,2,D);eye(9,3);R(9,5,2,1,P);
+ }else if(type==='scorp'){
+  const B='#d9604a',D='#a03a2a',L='#ffb0a0';
+  R(-5,7,1,3,D);R(-1,7,1,3,D);R(3,7,1,3,D);
+  E(0,4,6,3,B);E(0,6,4,1,L);
+  R(-7,2,2,3,B);R(-9,-1,2,4,B);R(-8,-4,4,2,B);R(-5,-3,2,3,B);R(-5,-1,2,2,'#ffe16a');
+  E(8,2,3,2,B);R(10,-1,2,2,B);R(10,3,2,2,B);eye(5,2);R(4,4,2,1,P);
+ }else if(type==='dimetro'){
+  const B='#f08a4a',D='#c05a2a',Sl='#ffb347',L='#ffe3b0';
+  R(-5,6,3,fr?2:3,D);R(3,6,3,fr?3:2,D);E(-10,4,3,1,B);R(-13,3,3,1,B);
+  E(0,-2,6,4,Sl);for(const k of[-4,-2,0,2,4])R(k,-5,1,6,D);
+  E(0,3,7,4,B);E(0,5,5,2,L);E(8,2,3,3,B);R(10,4,2,1,B);R(10,5,1,1,W);R(11,5,1,1,W);eye(8,0);R(8,3,2,1,P);
+ }else if(type==='rhampho'){
+  const B='#b48ae8',D='#7a56b8',Wg='#d8c8ff',Bk='#ffb347';
+  if(fr){for(let k=0;k<7;k++)R(-7,-2-k,7-k,1,Wg);R(-7,-2,7,1,D)}else{for(let k=0;k<6;k++)R(-7,2+k,7-k,1,Wg);R(-7,2,7,1,D)}
+  E(0,1,3,3,B);E(0,3,2,1,'#f0e8ff');R(-10,2,7,1,D);R(-12,1,3,3,'#ff6b9d');
+  E(5,-1,3,2,B);R(8,-1,4,1,Bk);R(0,-3,2,1,'#ff6b9d');eye(6,-2);R(5,0,2,1,P);
+ }else if(type==='archaeo'){
+  const B='#4fb0ff',Wg='#8fd0ff';
+  R(-10,2,6,1,'#ff6b6b');R(-10,3,6,1,'#ffd23f');R(-10,4,6,1,B);
+  if(fr){R(-3,-3,5,2,Wg);R(-1,-5,3,2,Wg)}else{R(-3,6,5,2,Wg);R(-1,8,3,1,Wg)}
+  E(0,3,5,4,B);E(0,5,3,2,'#e0f4ff');E(5,-1,3,3,B);R(8,0,2,1,'#ffb347');R(3,-5,1,2,'#ff6b6b');R(4,-6,1,3,'#ffd23f');eye(6,-2);R(5,1,2,1,P);R(-1,7,1,2,K);R(2,7,1,2,K);
+ }else if(type==='quetzal'){
+  const B='#ffcf5a',D='#e8a21c',Wg='#ffe9a0',Bk='#ffb347';
+  if(fr){for(let k=0;k<8;k++)R(-8,-2-k,8-k,1,Wg)}else{for(let k=0;k<7;k++)R(-8,2+k,8-k,1,Wg)}
+  E(0,1,4,3,B);E(0,3,3,1,'#fff6d8');R(4,-2,2,3,B);E(7,-4,2,2,B);R(9,-4,4,1,Bk);R(5,-8,4,2,'#e0447a');R(3,-7,2,1,'#e0447a');eye(7,-5);R(6,-3,2,1,P);R(-1,5,1,2,D);R(1,5,1,2,D);
+ }else if(type==='mosaB'){
+  const B='#3fc0b8',D='#2a8f9a',L='#d8fff4',Y='#ffd23f';
+  E(-14,4,4,3,B);R(-19,0,3,8,D);R(-20,-2,2,3,D);
+  R(-6,9,5,3,D);R(2,9,5,3,D);
+  E(-2,4,10,6,B);E(0,8,7,3,L);R(-6,-4,4,5,D);R(-3,-6,3,3,D);
+  E(11,1,6,5,B);R(10,5,10,2,B);for(const x of[12,14,16,18])R(x,5,1,1,W);
+  R(8,-6,6,1,Y);R(9,-7,1,1,Y);R(11,-8,1,2,Y);R(13,-7,1,1,Y);
+  eye(12,-2,3);R(10,3,3,1,P);
+ }else if(type==='scorpB'){
+  const B='#d9604a',D='#a03a2a',L='#ffb0a0',Y='#ffd23f';
+  R(-7,8,1,4,D);R(-3,8,1,4,D);R(1,8,1,4,D);R(5,8,1,4,D);
+  E(-1,4,9,5,B);E(-1,7,6,2,L);
+  R(-12,2,3,4,B);R(-14,-3,3,6,B);R(-12,-8,6,3,B);R(-7,-7,3,5,B);R(-7,-3,3,3,'#ffe16a');
+  E(10,1,4,3,B);R(13,-3,4,3,B);R(13,3,4,3,B);R(15,-3,2,1,D);R(15,5,2,1,D);
+  E(5,-1,3,3,D);eye(5,-3,3);R(4,1,3,1,P);
+  R(3,-6,6,1,Y);R(4,-7,1,1,Y);R(6,-8,1,2,Y);R(8,-7,1,1,Y);
+ }else if(type==='quetzB'){
+  const B='#ffcf5a',D='#e8a21c',Wg='#ffe9a0',Bk='#ffb347',Cr='#e0447a';
+  if(fr){for(let k=0;k<12;k++)R(-18,-4-k,16-k,1,Wg);R(-18,-4,16,1,D)}else{for(let k=0;k<11;k++)R(-18,4+k,16-k,1,Wg);R(-18,4,16,1,D)}
+  R(-3,9,2,4,D);R(2,9,2,4,D);
+  E(0,3,6,5,B);E(0,6,4,2,'#fff6d8');R(5,-5,3,9,B);E(9,-8,4,3,B);R(12,-8,9,2,Bk);R(13,-6,6,1,Bk);R(3,-13,8,3,Cr);R(2,-11,3,2,Cr);
+  eye(10,-10,3);R(8,-6,3,1,P);
  }else if(type==='ankylo'){
   const B='#8aa6c8',D='#5f7ea8',L='#e0ecff',Sp='#ffd36a';
   R(-6,6,3,fr?2:3,D);R(3,6,3,fr?3:2,D);E(-9,4,3,2,B);E(-12,4,2,2,D);
@@ -368,7 +541,7 @@ function drawDino(c,type,fr,u,ox,oy){
 const DSP={};
 function dinoSprite(type,fr){
  const k=type+fr;if(DSP[k])return DSP[k];
- const big=type==='trex'||type==='trex2',u=big?3:2,W=(big?44:26)*u,H=(big?36:22)*u,ox=(big?22:13)*u,oy=(big?18:11)*u,fy=(big?13:9)*u;
+ const big=!!DEFS[type].boss,u=big?3:2,W=(big?44:26)*u,H=(big?36:22)*u,ox=(big?22:13)*u,oy=(big?18:11)*u,fy=(big?13:9)*u;
  return DSP[k]=mkSprite(W,H,c=>drawDino(c,type,fr,u,ox,oy),ox,oy+fy);
 }
 
@@ -381,9 +554,18 @@ const BIOMES=[
  {name:'暴龍王座',base:'#5a4a7a',alt:'#504070',deco:'lava',tree:'#a04030',trunk:'#3a2525',rock:'#8a7aa8',sp:'crystal'},
  {name:'冰原',base:'#e4f4ff',alt:'#d6ecfa',deco:'snow',tree:'#2f8a6a',trunk:'#6a4a3a',rock:'#9fb4c8',sp:'ice'},
  {name:'極光谷',base:'#9fb0f0',alt:'#93a4e6',deco:'aurora',tree:'#6a6ad0',trunk:'#4a3a6a',rock:'#8a8ac0',sp:'ice'},
- {name:'冰霜王座',base:'#6a86b8',alt:'#5f7aac',deco:'aurora',tree:'#4a6ad0',trunk:'#2a2a5a',rock:'#9ab8e0',sp:'ice'}
+ {name:'冰霜王座',base:'#6a86b8',alt:'#5f7aac',deco:'aurora',tree:'#4a6ad0',trunk:'#2a2a5a',rock:'#9ab8e0',sp:'ice'},
+ {name:'珊瑚淺灘',base:'#74d6dc',alt:'#68cad2',deco:'bubble',tree:'#ff7a9a',trunk:'#c0507a',rock:'#c8b8a0',sp:'coral'},
+ {name:'深海谷',base:'#3f7fc4',alt:'#3a76b8',deco:'bubble',tree:'#7a5ad0',trunk:'#3a2a6a',rock:'#5a7aa8',sp:'coral'},
+ {name:'蕨類森林',base:'#4fa860',alt:'#489c58',deco:'fern',tree:'#2f7a3a',trunk:'#6a4a2a',rock:'#7a8a70',sp:'fern'},
+ {name:'琥珀沼澤',base:'#b08a4a',alt:'#a58044',deco:'fern',tree:'#6a8a2a',trunk:'#5a3a1a',rock:'#8a7a5a',sp:'fern'},
+ {name:'雲端平台',base:'#c8e8ff',alt:'#bce0fa',deco:'cloud',tree:'#9ad0ff',trunk:'#7ab0e0',rock:'#e8f4ff',sp:'cloudrock'},
+ {name:'彩虹高空',base:'#e0d0ff',alt:'#d6c4fa',deco:'cloud',tree:'#ffb0d8',trunk:'#c080d0',rock:'#f4eaff',sp:'cloudrock'},
+ {name:'滄龍深淵',base:'#2f5fa8',alt:'#2a579c',deco:'bubble',tree:'#7a5ad0',trunk:'#3a2a6a',rock:'#5a7aa8',sp:'coral'},
+ {name:'巨蠍沙坑',base:'#a67a3e',alt:'#9c7036',deco:'sand',tree:'#58b05a',trunk:'#58b05a',rock:'#c49a68',sp:'cactus'},
+ {name:'風神王座',base:'#a8c8f0',alt:'#9cc0ea',deco:'cloud',tree:'#9ad0ff',trunk:'#7ab0e0',rock:'#e8f4ff',sp:'cloudrock'}
 ];
-function biomeOf(n){return n===BOSS?4:n===BOSS2?7:n>=22?(n<=26?5:6):Math.max(0,Math.min(3,Math.floor((n-1)/5)))}
+function biomeOf(n){return levelInfo(n).bi}
 const OSP={};
 function obstacleSprite(kind,bi){
  const k=kind+bi;if(OSP[k])return OSP[k];const B=BIOMES[bi];
@@ -393,6 +575,9 @@ function obstacleSprite(kind,bi){
   else if(kind==='rock'){E(0,2,5,3,B.rock);E(-1,0,3,2,shade(B.rock,.25));R(2,3,3,1,shade(B.rock,-.25))}
   else if(B.sp==='cactus'){R(-1,-8,3,12,B.tree);R(-4,-4,2,1,B.tree);R(-4,-6,1,3,B.tree);R(3,-2,2,1,B.tree);R(4,-5,1,4,B.tree);R(0,-8,1,1,'#ff6b9d')}
   else if(B.sp==='shroom'){R(-1,-2,3,6,'#f3e6d0');E(0,-4,5,3,'#d8507a');R(-3,-5,2,1,'#fff');R(1,-6,2,1,'#fff');R(2,-4,1,1,'#fff')}
+  else if(B.sp==='coral'){R(-1,-6,2,10,'#ff7a9a');R(-4,-4,2,1,'#ff7a9a');R(-4,-6,1,3,'#ff7a9a');R(2,-3,3,1,'#ff9ab0');R(4,-6,1,4,'#ff9ab0');R(-1,-8,1,2,'#ffc0d0');R(0,-1,1,5,'#ffc0d0')}
+  else if(B.sp==='fern'){R(-1,-2,2,6,'#2f7a3a');E(-3,-4,3,1,'#4fae4a');E(3,-4,3,1,'#4fae4a');E(-2,-7,2,1,'#6fd05a');E(2,-7,2,1,'#6fd05a');R(0,-9,1,2,'#6fd05a');R(-3,-1,2,1,'#4fae4a');R(2,-2,2,1,'#4fae4a')}
+  else if(B.sp==='cloudrock'){E(0,0,5,3,'#fff');E(-3,-2,3,2,'#fff');E(3,-1,3,2,'#f0f8ff');E(-1,-3,2,2,'#e0f0ff');R(-4,3,8,1,'#c8e0f4')}
   else if(B.sp==='ice'){R(-1,-8,3,12,'#bff6ff');R(0,-10,1,2,'#fff');R(-4,-3,2,7,'#7fd0f0');R(3,-4,2,8,'#7fd0f0');R(0,-6,1,6,'#e8fcff')}
   else if(B.sp==='crystal'){R(-1,-8,3,12,'#ff9a3d');R(0,-10,1,2,'#ffd36a');R(-4,-3,2,7,'#e0602a');R(3,-4,2,8,'#e0602a');R(0,-6,1,6,'#ffe0a0')}
   else{E(0,0,5,4,'#4fae4a');E(-1,-2,3,2,'#6fd05a');R(2,-3,1,1,'#ff6b9d');R(-3,-1,1,1,'#ffd54a');R(3,1,1,1,'#fff')}
@@ -415,6 +600,9 @@ function buildBg(n,ww,wh,bio){
    if(i%9===0){const fc=['#ff7aa8','#fff','#ffd54a','#c28aff'][i%4];dot(px,py,4,4,fc);dot(px+1,py+1,2,2,'#ffec80')}}
   else if(B.deco==='sand'){dot(px,py,8,2,shade(B.base,-.12));if(i%7===0){dot(px,py,3,3,'#b89a6a')}}
   else if(B.deco==='swamp'){if(i%6===0){x.fillStyle='#3d8aa0';x.fillRect(px,py,18,8);x.fillStyle='#5fb0c5';x.fillRect(px+2,py+1,10,2)}else dot(px,py,2,4,shade(B.base,-.3))}
+  else if(B.deco==='bubble'){if(i%5===0){dot(px,py,4,4,'#ffffff66');dot(px+1,py+1,1,1,'#fff')}else dot(px,py,6,2,'#ffffff33')}
+  else if(B.deco==='fern'){dot(px,py,2,5,shade(B.base,-.3));dot(px+3,py+1,2,4,shade(B.base,-.2));if(i%8===0){dot(px,py,4,4,'#ffd54a')}}
+  else if(B.deco==='cloud'){if(i%4===0){dot(px,py,14,5,'#ffffff99');dot(px+3,py-2,8,3,'#ffffff99')}else dot(px,py,3,2,'#ffffff55')}
   else if(B.deco==='snow'){if(i%6===0){dot(px,py,10,3,'#fff');dot(px+2,py-1,6,1,'#fff')}else if(i%11===0){dot(px,py,6,4,'#bfe0f5')}else dot(px,py,2,2,'#c8e4f5')}
   else if(B.deco==='aurora'){if(i%7===0){dot(px,py,3,3,'#e0d8ff')}else if(i%5===0){dot(px,py,8,2,'#7fe0ff66')}else dot(px,py,2,2,shade(B.base,-.15))}
   else{if(i%5===0){dot(px,py,10,2,'#ff7a2a');dot(px+8,py+2,2,6,'#ff7a2a');dot(px+2,py,6,1,'#ffd36a')}else dot(px,py,3,2,shade(B.base,-.2))}
@@ -463,12 +651,40 @@ const wantAtk=()=>btn.a||keys.KeyJ||keys.Space,wantSk=()=>btn.b||keys.KeyK,wantD
 
 /* ============ 遊戲狀態 ============ */
 const cv=$('#game'),ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
-const TOP=16,BOSS=21,BOSS2=32;
+const TOP=16;
 let WW=640,WH=448,VW=512,VH=352,camX=0,camY=0,hudH=28;
-const isBoss=n=>n===BOSS||n===BOSS2;
-const CAVEDEF=[{name:'草原洞穴',bi:0,from:1},{name:'沙漠洞穴',bi:1,from:6},{name:'沼澤洞穴',bi:2,from:11},{name:'火山洞穴',bi:3,from:16},{name:'冰原洞穴',bi:5,from:22},{name:'極光洞穴',bi:6,from:27}];
-const lvlName=n=>n<=20?'第 '+n+' 關':n===BOSS?'魔王關':n<=31?'冰霜島 第 '+(n-21)+' 關':'冰霜魔王';
-const caveOf=n=>CAVEDEF.find(c=>n>=c.from&&n<c.from+5)||CAVEDEF[0];
+const ISL={
+ 1:{name:'恐龍島',sub:'侏羅紀大草原',hubBi:0,d0:1,boss:21,bossBi:4,bossType:'trex',bossName:'暴龍王',
+  caves:[{name:'草原洞穴',bi:0,from:1},{name:'沙漠洞穴',bi:1,from:6},{name:'沼澤洞穴',bi:2,from:11},{name:'火山洞穴',bi:3,from:16}],
+  types:['bronto','ptero','tric','raptor','stego'],desc:'暴龍王佔領的大草原，到處都是圓滾滾的小恐龍。'},
+ 2:{name:'古海灣島',sub:'白堊紀海洋',hubBi:1,d0:6,boss:51,bossBi:14,bossType:'mosaB',bossName:'滄龍王',
+  caves:[{name:'珊瑚洞穴',bi:8,from:41},{name:'深海洞穴',bi:9,from:46}],
+  types:['ammon','trilo','mosa','ichthy','plesio'],desc:'海裡的古老生物：菊石、三葉蟲、蛇頸龍、魚龍和滄龍。'},
+ 3:{name:'蕨林巨蟲島',sub:'石炭紀蕨類森林',hubBi:10,d0:10,boss:71,bossBi:15,bossType:'scorpB',bossName:'巨蠍王',
+  caves:[{name:'蕨葉洞穴',bi:10,from:61},{name:'琥珀洞穴',bi:11,from:66}],
+  types:['beetle','millipede','dragonfly','scorp','dimetro'],desc:'巨大的蜻蜓、馬陸、蠍子，還有背著大帆的異齒龍。'},
+ 4:{name:'翼龍天空島',sub:'雲端高空',hubBi:12,d0:14,boss:91,bossBi:16,bossType:'quetzB',bossName:'風神翼龍王',
+  caves:[{name:'雲海洞穴',bi:12,from:81},{name:'彩虹洞穴',bi:13,from:86}],
+  types:['rhampho','archaeo','ptero','quetzal','raptor'],desc:'天空中飛來飛去的翼龍和長羽毛的始祖鳥。'},
+ 5:{name:'冰霜島',sub:'最後的島嶼',hubBi:5,d0:22,boss:32,bossBi:7,bossType:'trex2',bossName:'冰霜暴龍王',
+  caves:[{name:'冰原洞穴',bi:5,from:22},{name:'極光洞穴',bi:6,from:27}],
+  types:['ankylo','pachy','ptero','raptor','stego','tric'],desc:'終極挑戰！龍之石的最後一塊碎片就在這裡。'}
+};
+const ISLIDS=[1,2,3,4,5];
+function levelInfo(n){
+ for(const id of ISLIDS){const I=ISL[id];
+  if(n===I.boss)return{isl:id,boss:true,bi:I.bossBi,diff:I.d0+(id===1?20:10),idx:-1,I};
+  for(let ci=0;ci<I.caves.length;ci++){const c=I.caves[ci];if(n>=c.from&&n<c.from+5){const idx=ci*5+(n-c.from);return{isl:id,boss:false,bi:c.bi,diff:I.d0+idx,idx,cave:c,I}}}
+ }
+ return{isl:1,boss:false,bi:0,diff:1,idx:0,cave:ISL[1].caves[0],I:ISL[1]};
+}
+const isBoss=n=>ISLIDS.some(i=>ISL[i].boss===n);
+const lvlName=n=>{const f=levelInfo(n);return f.boss?'魔王關 · '+f.I.bossName:f.isl===1?'第 '+(f.idx+1)+' 關':f.I.name+' 第 '+(f.idx+1)+' 關'};
+const caveOf=n=>levelInfo(n).cave||ISL[1].caves[0];
+const islLevels=id=>{const a=[];for(const c of ISL[id].caves)for(let i=0;i<5;i++)a.push(c.from+i);return a};
+const islTotal=id=>ISL[id].caves.length*5;
+const bossesBeaten=()=>ISLIDS.filter(i=>save.boss&&save.boss[i]).length;
+const frostOpen=()=>[1,2,3,4].every(i=>save.boss&&save.boss[i]);
 let uiOpen=false,hubPrevA=true;
 let mode='menu',G=null,P=null,paused=false,shake=0,last=0;
 const wpnDmg=()=>5+3*save.up.weapon,wpnReach=()=>Math.min(66,30+3*save.up.weapon);
@@ -487,30 +703,32 @@ function camSnap(){[camX,camY]=camTarget()}
 function camStep(){const[tx,ty]=camTarget();camX+=(tx-camX)*.18;camY+=(ty-camY)*.18}
 addEventListener('resize',resize);resize();
 
-const enemyCount=n=>Math.min(6+(n>=22?n-8:n),24);
-function planEnemies(n){
+const enemyCount=d=>Math.min(6+Math.min(d,18),24);
+function planEnemies(info){
+ const I=info.I,d=info.diff,idx=info.idx;
  let pool;
- if(n>=22)pool=['ankylo','pachy','ptero','raptor','stego','tric'];
- else{pool=['bronto'];if(n>=2)pool.push('ptero','tric');if(n>=3)pool.push('raptor');if(n>=4)pool.push('stego')}
- const cnt=enemyCount(n),list=[];
+ if(info.isl===1){const n=idx+1;pool=['bronto'];if(n>=2)pool.push('ptero','tric');if(n>=3)pool.push('raptor');if(n>=4)pool.push('stego')}
+ else pool=I.types.slice(0,Math.min(I.types.length,2+Math.floor(idx/2)));
+ const cnt=enemyCount(d),list=[];
  for(let i=0;i<cnt;i++){
   const t=i<2?pool[Math.min(pool.length-1,i)]:pick(pool);
-  list.push({t,opt:{elite:n>=6&&Math.random()<Math.min(.4,.04*n)}});
+  list.push({t,opt:{elite:d>=6&&Math.random()<Math.min(.4,.04*d)}});
  }
- if(n%5===0)list.push({t:pick(n>=22?['ankylo','stego','tric']:['tric','stego','bronto']),opt:{mini:true,sz:1.7}});
+ if(idx%5===4){const g=pool.filter(t=>!DEFS[t].fly);list.push({t:pick(g.length?g:pool),opt:{mini:true,sz:1.7}})}
  return list;
 }
 function overlapRect(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function newP(x,y,hp){return{x,y,hp,maxhp:hp,inv:0,dir:'down',fx:0,fy:1,walk:0,atkT:0,atkCd:0,skCd:0,dashT:0,dashCd:0,kx:0,ky:0,swingA:0}}
 function startLevel(n){
- const bi=biomeOf(n),rng=mulberry(n*131+7),boss=isBoss(n);
+ const info=levelInfo(n),bi=info.bi,rng=mulberry(n*131+7),boss=info.boss;
+ save.island=info.isl;writeSave();
  WW=Math.max(640,VW);WH=Math.max(448,VH);
  P=newP(WW/2,WH-70,boss?300:maxHpNormal());
- G={n,bi,hub:false,bg:buildBg(n,WW,WH),enemies:[],obs:[],shots:[],eshots:[],gems:[],fx:[],txt:[],rings:[],marks:[],ticket:null,t:0,banner:boss?3:2.2,bmax:boss?3:2.2,kills:0,earned:0,spawnQ:[],cleared:false,over:0,maxAlive:Math.min(10,5+Math.floor(n/4))};
+ G={n,info,diff:info.diff,bi,hub:false,bg:buildBg(n,WW,WH,bi),enemies:[],obs:[],shots:[],eshots:[],gems:[],fx:[],txt:[],rings:[],marks:[],ticket:null,t:0,banner:boss?3:2.2,bmax:boss?3:2.2,kills:0,earned:0,spawnQ:[],cleared:false,over:0,maxAlive:Math.min(10,5+Math.floor(info.diff/4)),markCol:boss?(DEFS[info.I.bossType].mark||'#78c8ff'):'#78c8ff'};
  camSnap();
  if(boss){
   for(const[a,b]of[[.2,.28],[.8,.28],[.2,.72],[.8,.72]])G.obs.push({x:WW*a,y:WH*b,w:18,h:10,kind:'special'});
-  G.enemies.push(mkEnemy(n===BOSS2?'trex2':'trex',WW/2,WH*.3,0));
+  G.enemies.push(mkEnemy(info.I.bossType,WW/2,WH*.3,0));
  }else{
   const cnt=rint(3,5);
   for(let i=0;i<cnt;i++){
@@ -519,19 +737,24 @@ function startLevel(n){
    while(tries<40&&(Math.hypot(o.x-P.x,o.y-P.y)<120||G.obs.some(q=>Math.hypot(q.x-o.x,q.y-o.y)<110)));
    G.obs.push(o);
   }
-  const nc=rint(1,2);
-  for(let i=0;i<nc;i++)G.obs.push({x:70+rng()*(WW-140),y:TOP+80+rng()*(WH-TOP-200),kind:'chest',w:18,h:10,hp:3,chest:true});
-  planEnemies(n).forEach((o,i)=>G.spawnQ.push({t:o.t,opt:o.opt,delay:.8+i*.38+rnd(0,.4)}));
+  const nc=rint(4,7);
+  for(let i=0;i<nc;i++){
+   let o,tries=0;
+   do{o={x:60+rng()*(WW-120),y:TOP+70+rng()*(WH-TOP-150),kind:'chest',w:18,h:10,hp:3,chest:true};tries++}
+   while(tries<40&&(Math.hypot(o.x-P.x,o.y-P.y)<100||G.obs.some(q=>Math.hypot(q.x-o.x,q.y-o.y)<60)));
+   G.obs.push(o);
+  }
+  planEnemies(info).forEach((o,i)=>G.spawnQ.push({t:o.t,opt:o.opt,delay:.8+i*.38+rnd(0,.4)}));
  }
  mode='play';paused=false;uiOpen=false;musicOn=true;
  $('#controls').classList.add('show');hideScreens();
  if(boss)setTimeout(()=>SFX.roar(),600);
 }
 function mkEnemy(type,x,y,sp,opt={}){
- const d=DEFS[type],boss=!!d.boss,sc=boss?1:1+.22*(G.n-1);
+ const d=DEFS[type],boss=!!d.boss,sc=boss?1:1+.2*((G.diff||1)-1);
  const sz=opt.sz||1,hm=opt.mini?9:opt.elite?2.2:1;
  const hp=Math.round(d.hp*sc*hm*(boss?.75:1));
- return{type,x,y,hp,maxhp:hp,vx:0,vy:0,face:1,fr:0,ft:0,flash:0,kx:0,ky:0,spawn:sp,st:'idle',t:rnd(.5,1.5),cd:rnd(1,2.5),z:d.fly?18:0,dir:rnd(0,6.28),boss,ang:rnd(0,6.28),dead:false,id:Math.random(),
+ return{type,x,y,hp,maxhp:hp,vx:0,vy:0,face:1,fr:0,ft:0,flash:0,kx:0,ky:0,spawn:sp,st:'idle',t:rnd(.5,1.5),cd:rnd(1,2.5),z:d.fly?18:(d.hover||0),dir:rnd(0,6.28),boss,ang:rnd(0,6.28),dead:false,id:Math.random(),
   sz,elite:!!opt.elite,mini:!!opt.mini,r:d.r*sz,h:d.h*sz,stun:0};
 }
 const ecy=e=>e.y-e.h/2-(e.z||0);
@@ -550,7 +773,7 @@ function moveEnt(e,dx,dy,hw,hh,free){
  else{e.x=nx;e.y=ny}
  const wl=hw+4;
  if(e.x<wl){e.x=wl;e.hit=true}if(e.x>WW-wl){e.x=WW-wl;e.hit=true}
- if(e.y<TOP+hh+6){e.y=TOP+hh+6;e.hit=true}if(e.y>WH-hh-6){e.y=WH-hh-6;e.hit=true}
+ if(e.y<TOP+hh+6){e.y=TOP+hh+6;e.hit=true}const mY=(G&&G.maxY)||WH;if(e.y>mY-hh-6){e.y=mY-hh-6;e.hit=true}
 }
 function fx(x,y,col,n=6,sp=60,life=.5,size=3){for(let i=0;i<n;i++){const a=rnd(0,6.28),s=rnd(.3,1)*sp;G.fx.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-20,life:rnd(.6,1)*life,max:life,col,size})}}
 function txt(x,y,s,col='#fff'){G.txt.push({x,y,s,col,t:.8})}
@@ -568,7 +791,7 @@ function dropGems(e,count){
   const r=Math.random(),t=r<.62?0:r<.9?1:r<.985?2:3;
   const a=rnd(0,6.28),s=rnd(30,70);
   G.gems.push({x:e.x,y:ecy(e),z:0,vx:Math.cos(a)*s,vy:Math.sin(a)*s*.6,vz:rnd(60,110),t,age:0,
-   val:Math.max(1,Math.round(GEMS[t].v*(1+G.n*.06)))});
+   val:Math.max(1,Math.round(GEMS[t].v*(1+(G.diff||8)*.06)))});
  }
 }
 function damageEnemy(e,d,kx,ky,fromFire){
@@ -586,7 +809,7 @@ function damageEnemy(e,d,kx,ky,fromFire){
 }
 function hitChest(o){
  o.hp--;SFX.chest();fx(o.x,o.y-12,'#ffd54a',6,60,.4);o.flash=.12;
- if(o.hp<=0){o.dead=true;fx(o.x,o.y-10,'#ffd54a',20,120,.8,4);dropGems({x:o.x,y:o.y,type:'bronto',h:20},rint(3,5))}
+ if(o.hp<=0){o.dead=true;if(o.key){save.opened[o.key]=true;writeSave()}fx(o.x,o.y-10,'#ffd54a',20,120,.8,4);dropGems({x:o.x,y:o.y,type:'bronto',h:20},rint(3,5))}
 }
 
 /* 玩家攻擊 */
@@ -629,32 +852,32 @@ function updateEnemies(dt){
   G.enemies.push(mkEnemy(q.t,x,y,.9,q.opt));alive++;
  }
  for(const e of G.enemies){
-  if(e.dead)continue;const d=DEFS[e.type];
+  if(e.dead)continue;const d=DEFS[e.type],ai=d.ai;
   e.flash=Math.max(0,e.flash-dt);
   if(e.spawn>0){e.spawn-=dt;if(Math.random()<.4)fx(e.x,e.y,'#fff7d0',1,30,.4,3);continue}
-  e.ft+=dt;if(e.ft>(e.type==='ptero'?.15:.22)){e.ft=0;e.fr^=1}
+  e.ft+=dt;if(e.ft>(d.fly?.15:.22)){e.ft=0;e.fr^=1}
   if(e.boss){bossAI(e,dt);continue}
   const px=P.x,py=pcy(),dx=px-e.x,dy=py-ecy(e),dist=Math.hypot(dx,dy)||1;
-  let vx=0,vy=0,spd=d.spd*Math.min(1.6,1+(G.n-1)*.03)*(e.elite?1.25:1)*(e.mini?.85:1);
+  let vx=0,vy=0,spd=d.spd*Math.min(1.6,1+((G.diff||1)-1)*.03)*(e.elite?1.25:1)*(e.mini?.85:1);
   e.t-=dt;e.cd-=dt;
   if(e.stun>0){e.stun-=dt}
-  else if(e.type==='bronto'){
+  else if(ai==='wander'){
    if(e.t<=0){e.t=rnd(1,2);e.dir=Math.random()<.5?Math.atan2(dy,dx):rnd(0,6.28)}
    vx=Math.cos(e.dir)*spd;vy=Math.sin(e.dir)*spd;
-  }else if(e.type==='raptor'){
+  }else if(ai==='chase'){
    if(e.st==='idle'){vx=dx/dist*spd;vy=dy/dist*spd;if(e.t<=0){e.st='pause';e.t=.4}}
    else if(e.t<=0){e.st='idle';e.t=rnd(1.2,2.4)}
-  }else if(e.type==='tric'||e.type==='ankylo'||e.type==='pachy'){
+  }else if(ai==='charge'){
    if(e.st==='idle'){vx=dx/dist*spd*.7;vy=dy/dist*spd*.7;
     if(e.cd<=0&&dist<170){e.st='wind';e.t=.6;e.dir=Math.atan2(dy,dx)}}
    else if(e.st==='wind'){if(e.t<=0){e.st='charge';e.t=.7;e.dir=Math.atan2(py-ecy(e),px-e.x)}}
-   else if(e.st==='charge'){const cs=e.type==='pachy'?240:190;vx=Math.cos(e.dir)*cs;vy=Math.sin(e.dir)*cs;if(e.t<=0||e.hit){e.st='rest';e.t=1;e.cd=2.2}}
+   else if(e.st==='charge'){const cs=e.type==='pachy'?240:(e.type==='trilo'||e.type==='scorp')?215:190;vx=Math.cos(e.dir)*cs;vy=Math.sin(e.dir)*cs;if(e.t<=0||e.hit){e.st='rest';e.t=1;e.cd=2.2}}
    else if(e.st==='rest'&&e.t<=0)e.st='idle';
-  }else if(e.type==='stego'){
+  }else if(ai==='shoot'){
    vx=dx/dist*spd;vy=dy/dist*spd;
    if(dist<110){vx*=-.6;vy*=-.6}
-   if(e.cd<=0){e.cd=Math.max(1.2,2.6-G.n*.06);const a=Math.atan2(dy,dx);G.eshots.push({x:e.x,y:ecy(e),vx:Math.cos(a)*85,vy:Math.sin(a)*85,dmg:1,r:5,col:'#ff9bd0',life:5})}
-  }else if(e.type==='ptero'){
+   if(e.cd<=0){e.cd=Math.max(1.2,2.6-(G.diff||1)*.06);const a=Math.atan2(dy,dx);G.eshots.push({x:e.x,y:ecy(e),vx:Math.cos(a)*85,vy:Math.sin(a)*85,dmg:1,r:5,col:d.col||'#ff9bd0',life:5})}
+  }else if(ai==='dive'){
    if(e.st==='idle'){
     e.ang+=dt*1.3;const tx=px+Math.cos(e.ang)*95,ty=py+Math.sin(e.ang)*60;
     const l=Math.hypot(tx-e.x,ty-ecy(e))||1;vx=(tx-e.x)/l*spd;vy=(ty-ecy(e))/l*spd;
@@ -683,8 +906,8 @@ function updateEnemies(dt){
 /* 暴龍魔王 */
 function bossAI(e,dt){
  const px=P.x,py=P.y,dx=px-e.x,dy=py-e.y,dist=Math.hypot(dx,dy)||1,enr=e.hp<e.maxhp*.5;
- e.t-=dt;e.hit=false;
- if(enr&&!e.enraged){e.enraged=true;SFX.roar();shake=12;txt(e.x,e.y-90,'暴龍發怒了！','#ff6b6b');for(let i=0;i<2;i++)G.spawnQ.push({t:'ptero',delay:.5+i*.6})}
+ e.t-=dt;e.hit=false;const hv=DEFS[e.type].hover||0;
+ if(enr&&!e.enraged){e.enraged=true;SFX.roar();shake=12;txt(e.x,e.y-90,DEFS[e.type].name+'發怒了！','#ff6b6b');for(let i=0;i<2;i++)G.spawnQ.push({t:(G.info.I.types.find(t=>DEFS[t].fly)||'ptero'),delay:.5+i*.6})}
  const wins=(a)=>{e.st=a};
  const face=()=>{if(Math.abs(dx)>4)e.face=dx>0?1:-1};
  switch(e.st){
@@ -695,10 +918,10 @@ function bossAI(e,dt){
    if(dist<62&&e.cd<=0){e.st='bite';e.t=.55;e.cd=1.2;break}
    e.cd-=dt;
    if(e.t<=0){
-    const m=Math.random(),b2=e.type==='trex2';
-    if(b2&&m<.3){e.st='rain';e.t=2.6;e.rc=0}
-    else if(m<(b2?.5:.34)){e.st='cwind';e.t=.85;e.dir=Math.atan2(dy,dx);e.n=(enr?2:1)+(b2?1:0)}
-    else if(m<(b2?.75:.68)){e.st='jump';e.t=.7;e.tx=px;e.ty=py;e.z=0}
+    const al=DEFS[e.type].atk,pa=al[Math.floor(Math.random()*al.length)];
+    if(pa==='rain'){e.st='rain';e.t=2.6;e.rc=0}
+    else if(pa==='cwind'){e.st='cwind';e.t=.85;e.dir=Math.atan2(dy,dx);e.n=(enr?2:1)+(e.type==='trex2'?1:0)}
+    else if(pa==='jump'){e.st='jump';e.t=.7;e.tx=px;e.ty=py;e.z=hv}
     else{e.st='spit';e.t=enr?2.4:1.8;e.sc=0;e.ang=Math.atan2(dy,dx)}
    }
   }break;
@@ -718,17 +941,17 @@ function bossAI(e,dt){
     if(e.n>1){e.n--;e.st='cwind';e.t=.6}else{e.st='rest';e.t=1.5}}
   }break;
   case'jump':
-   e.z=Math.sin(Math.min(1,(1-e.t/.7))*Math.PI)*70;if(e.t>.3){e.tx=px;e.ty=py}
+   e.z=Math.sin(Math.min(1,(1-e.t/.7))*Math.PI)*70+hv;if(e.t>.3){e.tx=px;e.ty=py}
    e.x+=(e.tx-e.x)*Math.min(1,dt*3);e.y+=(e.ty-e.y)*Math.min(1,dt*3);
-   if(e.t<=0){e.z=0;shake=14;SFX.roar();G.rings.push({x:e.x,y:e.y,r:10,max:230,hit:false});if(enr)G.rings.push({x:e.x,y:e.y,r:-40,max:230,hit:false});
+   if(e.t<=0){e.z=hv;shake=14;SFX.roar();G.rings.push({x:e.x,y:e.y,r:10,max:230,hit:false});if(enr)G.rings.push({x:e.x,y:e.y,r:-40,max:230,hit:false});
     if(Math.hypot(px-e.x,P.y-e.y)<42)hurtPlayer(100,dx/dist*220,dy/dist*220);
     e.st='rest';e.t=1.3}
    break;
   case'spit':
    e.sc-=dt;face();
    if(e.sc<=0){e.sc=enr?.2:.28;e.ang+=.55;SFX.fire();
-    const nn=e.type==='trex2'?(enr?5:4):(enr?3:2);
-    for(let k=0;k<nn;k++){const a=e.ang+k*(6.28/nn);G.eshots.push({x:e.x+e.face*28,y:e.y-34,vx:Math.cos(a)*125,vy:Math.sin(a)*125,dmg:100,r:8,col:'#ff8a3d',life:6})}}
+    const nn=(DEFS[e.type].spit||2)+(enr?1:0);
+    for(let k=0;k<nn;k++){const a=e.ang+k*(6.28/nn);G.eshots.push({x:e.x+e.face*28,y:e.y-34,vx:Math.cos(a)*125,vy:Math.sin(a)*125,dmg:100,r:8,col:DEFS[e.type].col||'#ff8a3d',life:6})}}
    if(e.t<=0){e.st='rest';e.t=1.2}break;
   case'rain':
    face();e.rc-=dt;
@@ -741,8 +964,8 @@ function bossAI(e,dt){
 function bossDefeated(e){
  mode='won';G.over=0;SFX.win();shake=16;
  for(let i=0;i<60;i++)G.gems.push({x:e.x,y:e.y-30,z:0,vx:rnd(-120,120),vy:rnd(-80,80),vz:rnd(80,200),t:rint(0,3),age:0,val:5});
- const bonus=G.n===BOSS2?700:300;G.spawnQ.length=0;
- if(G.n===BOSS)save.boss1=true;else save.boss2=true;
+ const isl=G.info.isl,bonus=isl===5?700:250+isl*50;G.bonus=bonus;G.spawnQ.length=0;
+ save.boss[isl]=true;
  save.gold+=bonus;G.earned+=bonus;writeSave();
  setTimeout(showWin,2600);
 }
@@ -819,12 +1042,12 @@ function update(dt){
  /* 過關 */
  if(mode==='play'&&!G.hub&&!isBoss(G.n)&&!G.cleared&&!G.spawnQ.length&&!G.enemies.length&&G.t>2){
   G.cleared=true;G.ticket={x:WW/2,y:WH/2,t:0};SFX.win();
-  const bonus=10+2*G.n;save.gold+=bonus;G.earned+=bonus;txt(WW/2,WH/2-30,'關卡完成！+'+bonus,'#ffd54a');
+  const bonus=10+2*G.diff;save.gold+=bonus;G.earned+=bonus;txt(WW/2,WH/2-30,'關卡完成！+'+bonus,'#ffd54a');
   G.banner=0;writeSave();
  }
  if(G.ticket){
   G.ticket.t+=dt;
-  if(mode==='play'&&Math.hypot(P.x-G.ticket.x,P.y-G.ticket.y)<22){mode='ticket';G.ticket.got=true;G.over=0;SFX.win();fx(G.ticket.x,G.ticket.y,'#ffd54a',30,140,1,4);save.cleared[G.n]=true;writeSave();const nn=G.n,isl=nn>=22?2:1,tot=isl===1?20:10;setTimeout(()=>{const c=clearedCount(isl);enterHub(c>=tot?(isl===1?'🎉 20 關全部通關！去右邊的「王座之門」挑戰暴龍王！':'🎉 冰霜島 10 關全部通關！去「王座之門」挑戰冰霜暴龍王！'):'🎫 '+lvlName(nn)+' 通關！（'+c+'/'+tot+'）')},1800)}
+  if(mode==='play'&&Math.hypot(P.x-G.ticket.x,P.y-G.ticket.y)<22){mode='ticket';G.ticket.got=true;G.over=0;SFX.win();fx(G.ticket.x,G.ticket.y,'#ffd54a',30,140,1,4);save.cleared[G.n]=true;writeSave();const nn=G.n,isl=G.info.isl,tot=islTotal(isl);setTimeout(()=>{save.island=isl;const c=clearedCount(isl);enterHub(c>=tot?'🎉 '+ISL[isl].name+'全部通關！去「王座之門」挑戰'+ISL[isl].bossName+'！':'🎫 '+lvlName(nn)+' 通關！（'+c+'/'+tot+'）')},1800)}
  }
  if(mode==='ticket'||mode==='dead'||mode==='won')G.over+=dt;
 }
@@ -847,10 +1070,10 @@ function drawHUD(){
  const ty=hudH-9;
  const gt='💎 '+save.gold;ctx.fillStyle='#ffd54a';ctx.fillText(gt,6,ty);
  ctx.fillStyle='#fff';ctx.textAlign='left';
- const lab=G.hub?(G.isl===2?'❄️ 雪村　通關 '+clearedCount(2)+'/10':'🏘 恐龍村　通關 '+clearedCount(1)+'/20'):lvlName(G.n)+(boss?'':'  敵人 '+(G.enemies.filter(e=>!e.dead).length+G.spawnQ.length));
+ const lab=G.hub?ISL[G.isl].name+'　通關 '+clearedCount(G.isl)+'/'+islTotal(G.isl)+(save.boss[G.isl]?' 👑':''):lvlName(G.n)+(boss?'':'  敵人 '+(G.enemies.filter(e=>!e.dead).length+G.spawnQ.length));
  ctx.fillText(lab,6+ctx.measureText(gt).width+14,ty);
  const bs=G.enemies.find(e=>e.boss);
- if(bs){const bw=Math.min(340,VW-40),bx=(VW-bw)/2,by=hudH+6;ctx.fillStyle='#000a';ctx.fillRect(bx-2,by,bw+4,12);ctx.fillStyle=bs.type==='trex2'?'#4fb0ff':'#e0447a';ctx.fillRect(bx,by+2,bw*Math.max(0,bs.hp/bs.maxhp),8);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(bs.type==='trex2'?'🧊 冰霜暴龍王':'🦖 暴龍王',VW/2,by+22);ctx.textAlign='left'}
+ if(bs){const bw=Math.min(340,VW-40),bx=(VW-bw)/2,by=hudH+6;ctx.fillStyle='#000a';ctx.fillRect(bx-2,by,bw+4,12);ctx.fillStyle=DEFS[bs.type].bar||'#e0447a';ctx.fillRect(bx,by+2,bw*Math.max(0,bs.hp/bs.maxhp),8);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText('👑 '+DEFS[bs.type].name,VW/2,by+22);ctx.textAlign='left'}
 }
 function drawPlayer(){
  const fr=(P.dashT>0)?1:(Math.sin(P.walk)>0?1:2);
@@ -902,8 +1125,9 @@ function draw(){
  if(shake>0)ctx.translate(Math.round(rnd(-shake,shake)/2),Math.round(rnd(-shake,shake)/2));
  ctx.translate(-Math.round(camX),-Math.round(camY));
  ctx.drawImage(G.bg,0,0);
+ if(G.hub)drawSea();
  for(const r of G.rings){if(r.r<=0)continue;ctx.strokeStyle='rgba(255,230,160,.9)';ctx.lineWidth=8;ctx.beginPath();ctx.ellipse(r.x,r.y,r.r,r.r/1.3,0,0,6.28);ctx.stroke();ctx.strokeStyle='rgba(255,90,60,.8)';ctx.lineWidth=3;ctx.stroke()}
- for(const m of G.marks){const k=1-m.t/1.1,rr=22;ctx.fillStyle='rgba(120,200,255,'+(.15+k*.3)+')';ctx.beginPath();ctx.ellipse(m.x,m.y,rr,rr*.6,0,0,6.28);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(m.x,m.y,Math.max(1,rr*k),Math.max(1,rr*.6*k),0,0,6.28);ctx.stroke()}
+ for(const m of G.marks){const k=1-m.t/1.1,rr=22;ctx.globalAlpha=.15+k*.3;ctx.fillStyle=G.markCol||'#78c8ff';ctx.beginPath();ctx.ellipse(m.x,m.y,rr,rr*.6,0,0,6.28);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(m.x,m.y,Math.max(1,rr*k),Math.max(1,rr*.6*k),0,0,6.28);ctx.stroke()}
  const items=[];
  for(const o of G.obs)items.push({y:o.y,f:()=>{
   if(G.hub&&drawHubItem(o))return;
@@ -931,9 +1155,9 @@ function draw(){
   const a=Math.min(1,G.banner,((G.bmax||2.2)-G.banner)*3+.2),by=Math.round(VH*.28);ctx.globalAlpha=Math.max(0,a);
   ctx.fillStyle='#000a';ctx.fillRect(0,by,VW,74);ctx.textAlign='center';
   ctx.fillStyle='#ffd54a';ctx.font='26px DotGothic16,sans-serif';
-  ctx.fillText(G.n===BOSS?'👑 魔王關：暴龍王 👑':G.n===BOSS2?'👑 冰霜魔王：冰霜暴龍王 👑':lvlName(G.n)+' · '+BIOMES[G.bi].name,VW/2,by+28);
+  ctx.fillText(G.info.boss?'👑 魔王關：'+G.info.I.bossName+' 👑':lvlName(G.n)+' · '+BIOMES[G.bi].name,VW/2,by+28);
   ctx.fillStyle='#fff';ctx.font='14px DotGothic16,sans-serif';
-  ctx.fillText(isBoss(G.n)?'被大暴龍打到 3 次就會倒下！看準警告標記躲開！':'進入【'+caveOf(G.n).name+'】'+(G.n%5===0?' · 👹 本關有頭目！':' · 打倒所有恐龍，拿到通關券！'),VW/2,by+54);
+  ctx.fillText(isBoss(G.n)?'被大暴龍打到 3 次就會倒下！看準警告標記躲開！':'進入【'+caveOf(G.n).name+'】'+(G.info.idx%5===4?' · 👹 本關有頭目！':' · 打倒所有恐龍，拿到通關券！'),VW/2,by+54);
   ctx.textAlign='left';ctx.globalAlpha=1;
  }
  if(mode==='ticket'){
@@ -958,44 +1182,77 @@ function loop(t){
 }
 requestAnimationFrame(loop);
 
-/* ============ 恐龍村 ============ */
-const clearedCount=(isl)=>{isl=isl||save.island||1;const a=isl===1?1:22,b=isl===1?20:31;let c=0;for(let i=a;i<=b;i++)if(save.cleared&&save.cleared[i])c++;return c};
+/* ============ 村莊 ============ */
+const SEAY=470;
+const clearedCount=(isl)=>{isl=isl||save.island||1;let c=0;for(const n of islLevels(isl))if(save.cleared&&save.cleared[n])c++;return c};
+const totalCleared=()=>ISLIDS.reduce((a,i)=>a+clearedCount(i),0);
 function hubSpots(isl){
- const common=[
-  {id:'granny',type:'granny',x:132,y:262,iy:262,rad:40,label:'婆婆的商店'},
-  {id:'gate',type:'gate',x:412,y:302,iy:320,rad:52,label:'王座之門'},
-  {id:'dock',type:'dock',x:470,y:168,iy:186,rad:40,label:'港口'}
- ];
- if(isl===1)return[
-  {id:'c0',type:'cave',ci:0,x:70,y:100,iy:118,rad:42,label:'草原洞穴'},
-  {id:'c1',type:'cave',ci:1,x:190,y:100,iy:118,rad:42,label:'沙漠洞穴'},
-  {id:'c2',type:'cave',ci:2,x:320,y:100,iy:118,rad:42,label:'沼澤洞穴'},
-  {id:'c3',type:'cave',ci:3,x:445,y:100,iy:118,rad:42,label:'火山洞穴'},...common];
- return[
-  {id:'c4',type:'cave',ci:4,x:150,y:100,iy:118,rad:42,label:'冰原洞穴'},
-  {id:'c5',type:'cave',ci:5,x:360,y:100,iy:118,rad:42,label:'極光洞穴'},...common];
+ const I=ISL[isl],sp=[];
+ const xs=I.caves.length===4?[110,280,450,620]:[260,540];
+ I.caves.forEach((c,i)=>sp.push({id:'c'+i,type:'cave',ci:i,x:xs[i],y:120,iy:138,rad:44,label:c.name}));
+ sp.push({id:'granny',type:'granny',x:176,y:360,iy:360,rad:42,label:'婆婆的商店'});
+ sp.push({id:'elder',type:'elder',x:400,y:330,iy:330,rad:44,label:DLG[isl].who});
+ sp.push({id:'gate',type:'gate',x:660,y:380,iy:398,rad:54,label:'王座之門'});
+ sp.push({id:'dock',type:'dock',x:560,y:448,iy:450,rad:48,label:'港口'});
+ return sp;
 }
 let toastT=null;
 function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>e.style.display='none',3200)}
 function enterHub(msg){
- const isl=save.island||1,rng=mulberry(99+isl);
- WW=512;WH=352;
- const bio=isl===1?0:5,bg=buildBg(isl===1?0:22,WW,WH,bio),x=bg.getContext('2d');
- x.fillStyle='#d9b97a';x.fillRect(240,120,32,232);x.fillRect(40,150,440,26);x.fillRect(100,150,26,130);x.fillRect(100,255,60,22);x.fillRect(360,300,100,22);x.fillRect(440,160,40,30);
- x.fillStyle='#c9a565';for(let i=0;i<60;i++)x.fillRect(rng()*430+40,152+rng()*20|0,3,2);for(let i=0;i<30;i++)x.fillRect(244+rng()*24|0,130+rng()*215|0,3,2);
- G={n:0,bi:bio,hub:true,isl,bg,enemies:[],obs:[],shots:[],eshots:[],gems:[],fx:[],txt:[],rings:[],marks:[],ticket:null,t:0,banner:0,bmax:1,kills:0,earned:0,spawnQ:[],cleared:false,over:0,near:null,spots:hubSpots(isl),maxAlive:0};
- for(const s of G.spots){
-  if(s.type==='cave')G.obs.push({x:s.x,y:s.y,w:46,h:12,kind:'cave',ci:s.ci});
+ const isl=save.island||1,I=ISL[isl],rng=mulberry(99+isl);
+ WW=800;WH=560;
+ const bg=buildBg(0,WW,WH,I.hubBi),x=bg.getContext('2d');
+ const spots=hubSpots(isl);
+ /* 道路 */
+ x.fillStyle='#d9b97a';
+ x.fillRect(388,140,24,330);x.fillRect(60,168,680,26);
+ for(const s of spots)if(s.type==='cave')x.fillRect(s.x-12,s.y+16,24,56);
+ x.fillRect(176-12,352,236,22);x.fillRect(400,372,270,22);x.fillRect(548,330,24,140);
+ x.fillStyle='#e8d098';x.fillRect(356,306,88,64);
+ x.fillStyle='#c9a565';for(let i=0;i<120;i++)x.fillRect(rng()*680+60|0,170+rng()*20|0,3,2);for(let i=0;i<60;i++)x.fillRect(392+rng()*20|0,150+rng()*300|0,3,2);
+ /* 沙灘 */
+ x.fillStyle='#f0dca0';x.fillRect(0,SEAY-18,WW,20);x.fillStyle='#e0c888';for(let i=0;i<80;i++)x.fillRect(rng()*WW|0,SEAY-16+rng()*14|0,3,2);
+ G={n:0,bi:I.hubBi,hub:true,isl,bg,enemies:[],obs:[],shots:[],eshots:[],gems:[],fx:[],txt:[],rings:[],marks:[],ticket:null,t:0,banner:0,bmax:1,kills:0,earned:0,spawnQ:[],cleared:false,over:0,near:null,spots,maxAlive:0,diff:8,maxY:SEAY-14};
+ for(const s of spots){
+  if(s.type==='cave')G.obs.push({x:s.x,y:s.y,w:46,h:12,kind:'cave',ci:s.ci,bi:I.caves[s.ci].bi});
   if(s.type==='granny')G.obs.push({x:s.x,y:s.y,w:12,h:6,kind:'granny'});
+  if(s.type==='elder')G.obs.push({x:s.x,y:s.y,w:12,h:6,kind:'elder'});
   if(s.type==='gate')G.obs.push({x:s.x,y:s.y-6,w:60,h:12,kind:'gate'});
-  if(s.type==='dock')G.obs.push({x:s.x,y:s.y,w:44,h:10,kind:'dock'});
  }
- G.obs.push({x:62,y:250,w:58,h:14,kind:'hut'});
- for(const[px,py,k]of[[30,60,'tree'],[500,60,'tree'],[20,320,'tree'],[495,330,'tree'],[200,230,'rock'],[330,215,'rock'],[170,310,'tree'],[330,322,'tree'],[28,200,'rock'],[498,235,'tree']])G.obs.push({x:px,y:py,w:20,h:10,kind:k});
- P=newP(256,310,maxHpNormal());camSnap();
+ G.obs.push({x:100,y:346,w:58,h:14,kind:'hut'});
+ const farFromSpots=(px,py)=>spots.every(s=>Math.hypot(px-s.x,py-s.iy)>80);
+ const onRoad=(px,py)=>Math.abs(px-400)<34||Math.abs(py-181)<34||(py>340&&py<400&&px>100&&px<690)||(Math.abs(px-560)<30&&py>330)||spots.some(s=>s.type==='cave'&&Math.abs(px-s.x)<30&&py<200);
+ let k=0,placed=0;
+ while(placed<22&&k++<400){
+  const px=30+rng()*(WW-60),py=60+rng()*(SEAY-90);
+  if(py<110&&placed%2)continue;
+  if(!farFromSpots(px,py)||onRoad(px,py)||G.obs.some(o=>Math.hypot(o.x-px,o.y-py)<44))continue;
+  G.obs.push({x:px,y:py,w:20,h:10,kind:rng()<.65?'tree':'rock'});placed++;
+ }
+ k=0;placed=0;
+ while(placed<3&&k++<300){
+  const px=40+rng()*(WW-80),py=210+rng()*(SEAY-260);
+  if(!farFromSpots(px,py)||onRoad(px,py)||G.obs.some(o=>Math.hypot(o.x-px,o.y-py)<50))continue;
+  const key='h'+isl+'_'+placed;placed++;
+  if(save.opened[key])continue;
+  G.obs.push({x:px,y:py,w:18,h:10,kind:'chest',chest:true,hp:3,key});
+ }
+ P=newP(400,430,maxHpNormal());camSnap();
  mode='play';paused=false;uiOpen=false;musicOn=true;hubPrevA=true;
  $('#controls').classList.add('show');hideScreens();
  if(msg)toast(msg);
+}
+function drawSea(){
+ const y0=SEAY,h=WH-SEAY;
+ ctx.fillStyle='#2f8fdc';ctx.fillRect(0,y0,WW,h);
+ ctx.fillStyle='#3aa0ea';for(let r=0;r<h;r+=12)ctx.fillRect(0,y0+r,WW,6);
+ ctx.fillStyle='rgba(255,255,255,.55)';
+ for(let i=0;i<54;i++){const x=((i*97+G.t*(10+i%5*4))%(WW+60))-30,y=y0+10+((i*37)%(h-16));ctx.fillRect(Math.round(x),y,12+i%3*4,2)}
+ ctx.fillStyle='#eaf8ff';for(let x=0;x<WW;x+=14){const yy=y0-4+Math.sin(G.t*2.2+x*.06)*2.5;ctx.fillRect(x,Math.round(yy),14,5)}
+ ctx.fillStyle='#7a4a24';ctx.fillRect(548,y0-8,24,66);ctx.fillStyle='#a06a34';for(let k=0;k<66;k+=8)ctx.fillRect(548,y0-8+k,24,6);
+ ctx.fillStyle='#4a2e18';ctx.fillRect(545,y0+50,5,12);ctx.fillRect(570,y0+50,5,12);ctx.fillRect(545,y0+8,5,12);ctx.fillRect(570,y0+8,5,12);
+ ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.ellipse(600,y0+46,36+Math.sin(G.t*2)*3,9,0,0,6.28);ctx.fill();
+ drawSp(ctx,DOCKSP,600,y0+40+Math.sin(G.t*1.8)*2);
 }
 function hubLogic(){
  let near=null,bd=1e9;
@@ -1005,45 +1262,148 @@ function hubLogic(){
  if(a&&!hubPrevA&&near){joy.x=joy.y=0;interact(near)}
  hubPrevA=a;
 }
-function travel(isl){save.island=isl;writeSave();enterHub(isl===2?'⛵ 抵達冰霜島！這裡的恐龍更強，小心！':'⛵ 回到恐龍島')}
+function travel(isl){save.island=isl;writeSave();enterHub('⛵ 抵達'+ISL[isl].name+'！'+ISL[isl].sub)}
 function interact(s){
  SFX.buy();
  if(s.type==='cave')openLevels(s.ci);
  else if(s.type==='granny')openShop();
+ else if(s.type==='elder')openDialog(G.isl);
+ else if(s.type==='dock')openPort();
  else if(s.type==='gate'){
-  const isl=G.isl,need=isl===1?20:10,c=clearedCount(isl);
-  if(c>=need){toast('🦖 王座之門開啟…');startLevel(isl===1?BOSS:BOSS2)}
-  else toast('🔒 王座之門緊閉著…需要先通關全部 '+need+' 關（目前 '+c+'/'+need+'）');
- }else if(s.type==='dock'){
-  if(G.isl===1){if(save.boss1)travel(2);else toast('⛵ 船還不能出海…先打敗暴龍王，才會有人來求救！')}
-  else travel(1);
+  const isl=G.isl,need=islTotal(isl),c=clearedCount(isl);
+  if(c>=need){toast('👑 王座之門開啟…');startLevel(ISL[isl].boss)}
+  else toast('🔒 王座之門緊閉著…需要先通關這座島全部 '+need+' 關（目前 '+c+'/'+need+'）');
  }
 }
 function openLevels(ci){
- const def=CAVEDEF[ci];
+ const I=ISL[G.isl],def=I.caves[ci],first=I.caves[0].from;
  uiOpen=true;joy.x=joy.y=0;$('#controls').classList.remove('show');
  $('#lvTitle').textContent='🕳️ '+def.name+' — '+BIOMES[def.bi].name;
  $('#lvDesc').textContent='選擇要挑戰的關卡（依序解鎖，過關可重複挑戰刷寶石）';
  const g=$('#lvGrid');g.innerHTML='';
  for(let i=0;i<5;i++){
-  const n=def.from+i,done=!!save.cleared[n],open=n===1||n===22||save.cleared[n-1];
+  const n=def.from+i,done=!!save.cleared[n],open=n===first||save.cleared[n-1];
   const b=document.createElement('button');b.className='btn lv '+(done?'go':open?'pri':'');b.disabled=!open;
-  b.innerHTML=(open?'':'🔒 ')+lvlName(n)+(done?' ✓':'')+'<small>'+(open?'恐龍 '+enemyCount(n)+(n%5===0?' ＋ 👹頭目':''):'先通關 '+lvlName(n-1))+'</small>';
+  const f=levelInfo(n);
+  b.innerHTML=(open?'':'🔒 ')+lvlName(n)+(done?' ✓':'')+'<small>'+(open?'恐龍 '+enemyCount(f.diff)+(f.idx%5===4?' ＋ 👹頭目':''):'先通關 '+lvlName(n-1))+'</small>';
   b.onclick=()=>{uiOpen=false;startLevel(n)};g.appendChild(b);
  }
  showScreen('#sLevels');
 }
 $('#lvBack').onclick=()=>{uiOpen=false;hideScreens();$('#controls').classList.add('show');hubPrevA=true};
+/* 港口 */
+function openPort(){
+ uiOpen=true;joy.x=joy.y=0;$('#controls').classList.remove('show');
+ $('#portHint').textContent='龍之石碎片：'+bossesBeaten()+' / 5　（前四座島可自由前往；打敗四位魔王才能挑戰最後的冰霜島）';
+ const g=$('#portGrid');g.innerHTML='';
+ for(const id of ISLIDS){
+  const I=ISL[id],here=id===G.isl,locked=id===5&&!frostOpen();
+  const b=document.createElement('button');b.className='btn lv '+(here?'':locked?'':'pri');b.disabled=here||locked;
+  b.innerHTML=(locked?'🔒 ':'')+(here?'📍 ':'')+I.name+(save.boss[id]?' 👑':'')+'<small>'+I.sub+'</small><small>通關 '+clearedCount(id)+'/'+islTotal(id)+'</small><small>'+(locked?'需先打敗前四座島的魔王':I.desc)+'</small>';
+  b.onclick=()=>{uiOpen=false;hideScreens();travel(id)};g.appendChild(b);
+ }
+ showScreen('#sPort');
+}
+$('#portBack').onclick=()=>{uiOpen=false;hideScreens();$('#controls').classList.add('show');hubPrevA=true};
+
+/* 對話 / 劇情 */
+const DLG={
+1:{who:'多多爺爺',nodes:{
+ start:{t:'哎呀，年輕的冒險者！歡迎來到恐龍島。這座島本來很和平，直到暴龍王偷走了「龍之石」……',o:[{l:'龍之石是什麼？',n:'stone'},{l:'爺爺有什麼建議嗎？',n:'tips'},{l:'有沒有好吃的？',n:'food'},{l:'我打敗暴龍王了！',n:'win',if:'b1'},{l:'再見！',n:null}]},
+ stone:{t:'龍之石是守護世界的寶物，很久以前被五位魔王打碎，每人搶走一塊，分別藏在五座島上。把五塊碎片都奪回來，世界才會恢復平靜。',o:[{l:'我會幫忙的！',n:'help'},{l:'好複雜喔…',n:'start'}]},
+ help:{t:'好孩子！爺爺沒什麼好送你的，這點寶石拿去當旅費吧。',g:30,f:'d1h',o:[{l:'謝謝爺爺！',n:'start'}]},
+ tips:{t:'洞穴裡的寶箱記得敲開，裡面有寶石！被圍住的時候按「閃避」可以無敵衝出去。魔王的警告標記一定要躲開哦！',g:10,f:'d1t',o:[{l:'記住了！',n:'start'}]},
+ food:{t:'嘿嘿，我剛烤好一顆恐龍蛋，趁熱吃吧！吃飽才有力氣打架。順便塞點零用錢給你。',g:15,f:'d1f',o:[{l:'好好吃！',n:'start'}]},
+ win:{t:'什麼？！你真的打敗了暴龍王？太了不起了！這是爺爺的心意。港口的船可以帶你去其他島嶼，他們一定也需要你！',g:100,f:'d1w',o:[{l:'我出發了！',n:null}]}
+}},
+2:{who:'海叔',nodes:{
+ start:{t:'喲，小夥子！我是在這片古老海灣捕魚的海叔。最近滄龍王把海水攪得亂七八糟，船都不敢出海了…',o:[{l:'發生什麼事了？',n:'sea'},{l:'有捕魚的訣竅嗎？',n:'tips'},{l:'海叔的帽子好帥！',n:'hat'},{l:'滄龍王被我打敗了！',n:'win',if:'b2'},{l:'再見！',n:null}]},
+ sea:{t:'滄龍王搶走了一塊龍之石碎片，躲在深海洞穴的最底層。那裡有菊石、三葉蟲，還有會噴水的蛇頸龍，千萬小心！',o:[{l:'交給我吧！',n:'help'},{l:'聽起來好可怕…',n:'start'}]},
+ help:{t:'有膽量！這袋是我今天的漁獲換來的錢，拿去用吧。',g:40,f:'d2h',o:[{l:'謝謝海叔！',n:'start'}]},
+ tips:{t:'三葉蟲會直直衝撞，看到它蹲下來就側身閃開。蛇頸龍會噴水球，保持移動就打不到你。',g:12,f:'d2t',o:[{l:'受教了！',n:'start'}]},
+ hat:{t:'哈哈，這可是我年輕時環遊世界換來的！好眼光，這點小意思送你買點補給。',g:15,f:'d2c',o:[{l:'嘿嘿～',n:'start'}]},
+ win:{t:'你……你把滄龍王打敗了？！海面終於平靜了！這是全村人的謝禮，快收下！',g:120,f:'d2w',o:[{l:'不客氣！',n:null}]}
+}},
+3:{who:'蕨博士',nodes:{
+ start:{t:'嗯？有訪客？我是研究遠古蟲類的蕨博士。你看這裡的蜻蜓有多大，簡直是奇蹟！可惜巨蠍王最近占領了森林…',o:[{l:'巨蠍王做了什麼？',n:'bug'},{l:'博士有研究心得嗎？',n:'tips'},{l:'這些蟲蟲好可愛喔！',n:'cute'},{l:'我打敗巨蠍王了！',n:'win',if:'b3'},{l:'再見！',n:null}]},
+ bug:{t:'巨蠍王拿走了龍之石碎片，把它藏在琥珀洞穴裡。琥珀裡封印著億萬年前的小生物，據說碎片就在最深處。',o:[{l:'我去把它拿回來！',n:'help'},{l:'讓我再想想',n:'start'}]},
+ help:{t:'太好了，研究經費我分你一點，帶著去買裝備吧！',g:50,f:'d3h',o:[{l:'謝謝博士！',n:'start'}]},
+ tips:{t:'異齒龍背上的大帆是用來散熱的，牠站著不動的時候最會吐火球。繞到側面就能避開！',g:14,f:'d3t',o:[{l:'原來如此！',n:'start'}]},
+ cute:{t:'對吧對吧！你很有眼光！這顆小小的琥珀送你，我幫你換成寶石了。',g:18,f:'d3c',o:[{l:'謝謝！',n:'start'}]},
+ win:{t:'不可思議！你真的擊敗了巨蠍王！這是我的研究獎金，你比我更像探險家！',g:140,f:'d3w',o:[{l:'嘿嘿，應該的！',n:null}]}
+}},
+4:{who:'風爺爺',nodes:{
+ start:{t:'呵呵，小朋友，這裡是離天空最近的地方。我年輕時是飛行員，現在只能在地上看雲了……風神翼龍王把雲都攪亂啦。',o:[{l:'風神翼龍王是誰？',n:'king'},{l:'爺爺有什麼飛行心得？',n:'tips'},{l:'聽爺爺講以前的故事',n:'story'},{l:'風神翼龍王被我打敗了！',n:'win',if:'b4'},{l:'再見！',n:null}]},
+ king:{t:'牠是天空的霸主，搶走了一塊龍之石碎片。牠最愛從高空俯衝，還會召喚「落羽雨」，地上出現白圈就趕快跑！',o:[{l:'我會讓牠安靜下來！',n:'help'},{l:'好高好可怕…',n:'start'}]},
+ help:{t:'好志氣！風會保佑你的。這點盤纏拿著。',g:60,f:'d4h',o:[{l:'謝謝爺爺！',n:'start'}]},
+ tips:{t:'翼龍會繞著你轉，然後突然俯衝。看到牠停下來晃動，就是要衝過來了，這時候閃避最安全！',g:16,f:'d4t',o:[{l:'知道了！',n:'start'}]},
+ story:{t:'以前我開著小飛機和翼龍賽跑，有一次還被始祖鳥追著跑呢！哈哈哈！來，爺爺請你吃雲朵糖。',g:20,f:'d4s',o:[{l:'好甜！',n:'start'}]},
+ win:{t:'你……你擊敗了風神翼龍王！天空又藍了！快收下吧，這是爺爺的珍藏。',g:160,f:'d4w',o:[{l:'謝謝爺爺！',n:null}]}
+}},
+5:{who:'雪長老',nodes:{
+ start:{t:'……旅人，你終於來到了最後一座島。冰霜暴龍王守著最後一塊龍之石碎片，牠比其他所有魔王都更強大。',o:[{l:'牠有什麼招式？',n:'boss'},{l:'長老有什麼叮嚀？',n:'tips'},{l:'我準備好了！',n:'ready',if:'all4'},{l:'我打敗冰霜暴龍王了！',n:'win',if:'b5'},{l:'再見！',n:null}]},
+ boss:{t:'牠會衝撞、跳躍震地、噴出冰球，還會召喚「冰錐雨」——地上出現藍圈，不久後冰錐就會落下。而且被牠打到三次，你就倒下了。',o:[{l:'我會小心的',n:'help'},{l:'好危險…',n:'start'}]},
+ help:{t:'去吧，勇敢的旅人。這是長老的一點心意，希望能幫上你。',g:80,f:'d5h',o:[{l:'謝謝長老！',n:'start'}]},
+ tips:{t:'先把裝備買齊，再去挑戰牠。記得善用「閃避」，無敵衝刺是你最好的朋友。',g:20,f:'d5t',o:[{l:'我會的！',n:'start'}]},
+ ready:{t:'你已經奪回了四塊碎片……最後一塊就在王座之門後面。願龍之石的力量與你同在！',g:100,f:'d5r',o:[{l:'出發！',n:null}]},
+ win:{t:'五塊龍之石碎片終於重聚了……你拯救了所有的島嶼！你就是傳說中的英雄！這是我們最後的感謝。',g:300,f:'d5w',o:[{l:'這一切都是大家的功勞！',n:null}]}
+}}
+};
+function dlgCond(c){
+ if(c==='all4')return frostOpen();
+ const m=/^b(d)$/.exec(c);return m?!!save.boss[+m[1]]:true;
+}
+let dlgIsl=1;
+function openDialog(isl){
+ dlgIsl=isl;uiOpen=true;joy.x=joy.y=0;$('#controls').classList.remove('show');
+ showNode('start');$('#sDialog').classList.add('show');
+}
+function closeDialog(){uiOpen=false;hideScreens();$('#controls').classList.add('show');hubPrevA=true}
+function showNode(id){
+ const D=DLG[dlgIsl],n=D.nodes[id];let gift='';
+ if(n.g&&n.f&&!save.flags[n.f]){save.flags[n.f]=1;save.gold+=n.g;writeSave();gift='<span class="gift">💎 +'+n.g+'（'+D.who+'給了你一些寶石）</span>'}
+ $('#dlgName').textContent='💬 '+D.who;
+ $('#dlgText').innerHTML=n.t+gift;
+ const box=$('#dlgOpts');box.innerHTML='';
+ for(const o of n.o){
+  if(o.if&&!dlgCond(o.if))continue;
+  const b=document.createElement('button');b.className='btn';b.textContent=o.l;
+  b.onclick=()=>{o.n?showNode(o.n):closeDialog()};box.appendChild(b);
+ }
+}
+
+/* 存檔代碼 */
+function exportCode(){try{return btoa(unescape(encodeURIComponent(JSON.stringify(save))))}catch(e){return''}}
+function importCode(t){
+ try{const o=JSON.parse(decodeURIComponent(escape(atob(t.trim()))));if(!o||!o.look||!o.up)return false;save=migrate(o);writeSave();invalidate();return true}catch(e){return false}
+}
+$('#mSave').onclick=()=>{ac();$('#saveText').value=save?exportCode():'';showScreen('#sSave')};
+$('#svExport').onclick=()=>{if(!save){toast('還沒有存檔可以匯出');return}const c=exportCode();$('#saveText').value=c;try{navigator.clipboard.writeText(c);toast('✅ 代碼已複製！貼到另一台裝置就能接著玩')}catch(e){toast('請手動全選複製下面的代碼')}};
+$('#svImport').onclick=()=>{if(importCode($('#saveText').value)){toast('✅ 匯入成功！');toTitle()}else toast('❌ 代碼不正確，請確認有完整貼上')};
+$('#svBack').onclick=()=>toTitle();
+setInterval(()=>{if(save&&mode==='play'&&!paused)writeSave()},4000);
+addEventListener('pagehide',()=>{if(save)writeSave()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&save)writeSave()});
 
 /* 村莊素材 */
 function caveSprite(bi){
- const k='cave'+bi;if(OSP[k])return OSP[k];const col=['#3f9e4a','#e0a93a','#3d8aa0','#e0602a','#7fd0f0','#c36bff'][bi];
+ const k='cave'+bi;if(OSP[k])return OSP[k];const col=BIOMES[bi].tree;
  return OSP[k]=mkSprite(72,64,c=>{const{R,E}=mkR(c,2,36,44);
   E(0,-6,14,10,'#9a97a8');E(-3,-10,8,4,'#b8b5c6');E(-9,-12,4,2,col);E(8,-10,3,2,col);
   E(0,-3,5,6,'#1b1020');R(-5,-3,10,7,'#1b1020');E(0,-4,3,3,'#2d1a3a');
   R(-6,-4,1,8,'#6a6878');R(5,-4,1,8,'#6a6878');
   R(11,-20,1,10,'#6a4a2a');R(12,-20,5,4,col);R(13,-19,2,1,'#fff')},36,52);
 }
+function elderSprite(isl){const k='eld'+isl;if(OSP[k])return OSP[k];const rc=['#8a6a3a','#2f7ab8','#2f8a5a','#8a5ad0','#7aa8d0'][isl-1];
+ return OSP[k]=mkSprite(44,60,c=>{const{R}=mkR(c,2,22,40);const K=OUT;
+  R(-6,1,12,5,shade(rc,-.2));R(-5,-7,10,9,rc);R(-5,-7,10,2,shade(rc,.25));R(-7,-5,2,6,rc);R(5,-5,2,6,rc);R(-7,1,2,1,'#f3cfae');R(5,1,2,1,'#f3cfae');
+  R(-4,-14,8,7,'#f3cfae');R(-5,-16,10,3,'#e8e8f0');R(-5,-14,1,4,'#e8e8f0');R(4,-14,1,4,'#e8e8f0');
+  R(-4,-8,8,3,'#e8e8f0');R(-2,-6,4,2,'#e8e8f0');R(-3,-12,2,1,'#e8e8f0');R(1,-12,2,1,'#e8e8f0');
+  R(-3,-11,1,1,K);R(2,-11,1,1,K);R(-4,-9,1,1,'#ff9db0');R(3,-9,1,1,'#ff9db0');
+  if(isl===2){R(-6,-17,12,1,'#d8b050');R(-4,-19,8,2,'#d8b050')}
+  if(isl===3){R(-4,-12,3,2,'#9fdcff');R(1,-12,3,2,'#9fdcff');R(-1,-11,2,1,K)}
+  if(isl===4){R(-5,-17,10,2,'#8b5a2b');R(-4,-12,8,1,'#8b5a2b')}
+  R(-3,6,2,1,'#5a3a1b');R(1,6,2,1,'#5a3a1b');R(8,-4,1,11,'#8b5a2b');R(7,-5,3,1,'#8b5a2b')},22,54)}
 const GRANNYSP=mkSprite(44,60,c=>{const{R,E}=mkR(c,2,22,40);const K=OUT;
  R(-6,1,12,5,'#7a46b0');R(-5,-7,10,9,'#a05ad8');R(-5,-7,10,2,'#c88aff');R(-7,-5,2,6,'#a05ad8');R(5,-5,2,6,'#a05ad8');R(-7,1,2,1,'#f3cfae');R(5,1,2,1,'#f3cfae');
  R(-4,-14,8,7,'#f3cfae');R(-5,-16,10,3,'#dcdcec');R(-5,-14,1,4,'#dcdcec');R(4,-14,1,4,'#dcdcec');E(0,-18,2,2,'#dcdcec');
@@ -1061,16 +1421,12 @@ const GATESP=mkSprite(96,100,c=>{const{R,E}=mkR(c,2,48,90);
 const DOCKSP=mkSprite(88,64,c=>{const{R}=mkR(c,2,44,40);
  R(-14,0,28,3,'#8a5a2b');R(-12,3,24,2,'#6a4220');R(-10,5,20,1,'#4a2e18');R(-14,-1,28,1,'#b07a3b');
  R(0,-14,1,15,'#6a4220');R(2,-13,9,10,'#fff');R(2,-13,9,1,'#ddd');R(2,-6,9,1,'#ddd');R(-1,-17,4,2,'#e0447a');R(-9,-3,3,3,'#c98a12');R(-8,-4,1,1,'#ffd54a')},44,46);
-function hubWon(){return clearedCount(G.isl)>=(G.isl===1?20:10)}
+function hubWon(){return clearedCount(G.isl)>=islTotal(G.isl)}
 function drawHubItem(o){
- if(o.kind==='cave'){ctx.fillStyle='#0003';ctx.beginPath();ctx.ellipse(o.x,o.y+4,28,6,0,0,6.28);ctx.fill();drawSp(ctx,caveSprite(o.ci),o.x,o.y+8);return true}
+ if(o.kind==='cave'){ctx.fillStyle='#0003';ctx.beginPath();ctx.ellipse(o.x,o.y+4,28,6,0,0,6.28);ctx.fill();drawSp(ctx,caveSprite(o.bi),o.x,o.y+8);return true}
  if(o.kind==='hut'){drawSp(ctx,HUTSP,o.x,o.y+8);return true}
- if(o.kind==='granny'){const b=Math.abs(Math.sin(G.t*2.5))*-1.5;ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(o.x,o.y+2,10,4,0,0,6.28);ctx.fill();drawSp(ctx,GRANNYSP,o.x,o.y+b);
-  ctx.fillStyle='#ffd54a';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText('!',o.x,o.y-44+b+Math.sin(G.t*5)*2);ctx.textAlign='left';return true}
- if(o.kind==='dock'){
-  ctx.fillStyle='#4fa8e0';ctx.beginPath();ctx.ellipse(o.x,o.y+4,34,12,0,0,6.28);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(o.x,o.y+4,26+Math.sin(G.t*2)*3,8,0,0,6.28);ctx.stroke();
-  drawSp(ctx,DOCKSP,o.x,o.y+Math.sin(G.t*2)*1.5);return true}
+ if(o.kind==='granny'||o.kind==='elder'){const b=Math.abs(Math.sin(G.t*2.5))*-1.5;ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(o.x,o.y+2,10,4,0,0,6.28);ctx.fill();drawSp(ctx,o.kind==='granny'?GRANNYSP:elderSprite(G.isl),o.x,o.y+b);
+  ctx.fillStyle='#ffd54a';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText(o.kind==='granny'?'!':'💬',o.x,o.y-44+b+Math.sin(G.t*5)*2);ctx.textAlign='left';return true}
  if(o.kind==='gate'){
   const ok=hubWon(),gx=o.x,gy=o.y+10;
   ctx.fillStyle='#0004';ctx.beginPath();ctx.ellipse(gx,gy,32,6,0,0,6.28);ctx.fill();
@@ -1083,18 +1439,19 @@ function drawHubItem(o){
 function drawHubOverlay(){
  ctx.font='13px DotGothic16,sans-serif';ctx.textAlign='center';
  for(const s of G.spots){
-  let lab=s.label,y=s.type==='cave'?s.y+22:s.type==='granny'?s.y+16:s.type==='dock'?s.y+22:s.y+30;
-  if(s.type==='cave'){const d=CAVEDEF[s.ci];let c=0;for(let n=d.from;n<d.from+5;n++)if(save.cleared[n])c++;lab+='  '+c+'/5'}
+  let lab=s.label,y=s.type==='cave'?s.y+22:s.type==='granny'||s.type==='elder'?s.y+16:s.type==='dock'?s.y-16:s.y+30;
+  if(s.type==='cave'){const d=ISL[G.isl].caves[s.ci];let c=0;for(let n=d.from;n<d.from+5;n++)if(save.cleared[n])c++;lab+='  '+c+'/5'}
   if(s.type==='gate')lab=(hubWon()?'👑 ':'🔒 ')+lab;
-  if(s.type==='dock')lab=G.isl===1?(save.boss1?'⛵ 港口→冰霜島':'🔒 港口'):'⛵ 港口→恐龍島';
+  if(s.type==='dock')lab='⛵ 港口';
+  if(s.type==='elder')lab='💬 '+lab;
   const w=ctx.measureText(lab).width+10;ctx.fillStyle='#000a';ctx.fillRect(s.x-w/2,y-11,w,16);ctx.fillStyle=s.type==='gate'||s.type==='dock'?'#ffd54a':'#fff';ctx.fillText(lab,s.x,y+1);
  }
  ctx.textAlign='left';
 }
 function drawHubPrompt(){
  if(!G.near)return;
- const n=G.near,verb=n.type==='cave'?'進入 ':n.type==='gate'?'打開 ':n.type==='dock'?'搭船：':'和 ';
- const t='按【攻擊 / J】'+verb+n.label;
+ const n=G.near,verb=n.type==='cave'?'進入 ':n.type==='gate'?'打開 ':n.type==='dock'?'搭船出海 ':n.type==='elder'?'和 ':'和 ';
+ const t='按【攻擊 / J】'+verb+n.label+(n.type==='elder'?' 聊天':'');
  ctx.font='15px DotGothic16,sans-serif';ctx.textAlign='center';const w=ctx.measureText(t).width+24,y=hudH+8;
  ctx.fillStyle='#000c';ctx.fillRect(VW/2-w/2,y,w,26);ctx.strokeStyle='#ffd54a';ctx.lineWidth=2;ctx.strokeRect(VW/2-w/2,y,w,26);ctx.fillStyle='#ffd54a';ctx.fillText(t,VW/2,y+14);ctx.textAlign='left';
 }
@@ -1118,17 +1475,21 @@ function showDead(){
   [['回到村莊','go',()=>enterHub()]]);
 }
 function showWin(){
+ const isl=G.info.isl,I=ISL[isl],n=bossesBeaten();
  const st='總共擊倒 <b style="color:#ffd54a">'+save.kills+'</b> 隻恐龍，收集 <b style="color:#7fe0ff">'+save.gems+'</b> 顆寶石';
- if(G.n===BOSS2)showMsg('🏆 兩座島都得救了！🏆','你擊敗了冰霜暴龍王，恐龍島和冰霜島都重獲和平！<br>'+st+'<br>（打敗魔王獎勵 💎 700）',
-  [['回到村莊','go',()=>enterHub('🏆 你是最偉大的恐龍島英雄！')],['回標題','',toTitle]]);
- else showMsg('🏆 恭喜擊敗暴龍王！🏆','恐龍島得救了！<br>但遠方傳來求救聲…<b style="color:#7fe0ff">冰霜島</b>也需要你的幫助！<br>村莊右邊的「港口」已經開放，搭船出發吧！<br>'+st+'<br>（打敗魔王獎勵 💎 300）',
-  [['回到村莊','go',()=>enterHub('⛵ 港口開放了！走到右邊的船旁按攻擊出發')],['回標題','',toTitle]]);
+ let body='你擊敗了 <b>'+I.bossName+'</b>，奪回了龍之石碎片！（'+n+' / 5）<br>';
+ if(isl===5)body+='五塊碎片同時發出耀眼的光芒，合而為一……<br>所有的島嶼都恢復了和平！🎉<br>你就是傳說中的英雄！<br>';
+ else if(frostOpen())body+='四座島都得救了！通往最後一座「冰霜島」的航線開通了！<br>';
+ else body+='還有其他島嶼等著你，到港口搭船出發吧！<br>';
+ body+=st+'<br>（打敗魔王獎勵 💎 '+G.bonus+'）';
+ showMsg(isl===5?'🏆 世界得救了！🏆':'🏆 擊敗'+I.bossName+'！🏆',body,
+  [['回到村莊','go',()=>enterHub(isl===5?'🏆 你是最偉大的恐龍島英雄！':'🐚 龍之石碎片 '+n+'/5')],['回標題','',toTitle]]);
 }
 function toTitle(){
  mode='menu';musicOn=false;$('#controls').classList.remove('show');showScreen('#sTitle');
  $('#mContinue').style.display=save?'':'none';$('#mEdit').style.display=save?'':'none';
  uiOpen=false;
- if(save)$('#mContinue').textContent='▶ 繼續冒險（通關 '+(clearedCount(1)+clearedCount(2))+'/30）';
+ if(save)$('#mContinue').textContent='▶ 繼續冒險（通關 '+totalCleared()+'/60　碎片 '+bossesBeaten()+'/5）';
 }
 
 /* ---- 商店 ---- */
@@ -1160,15 +1521,18 @@ function renderShop(){
 $('#shEdit').onclick=()=>openCreate(false,true);
 
 /* ---- 捏臉 ---- */
-const SKINS=['#fde4cf','#f6d3b3','#eab98d','#d39b6b','#a9714b','#7a4a30'];
+const SKINS=['#fde4cf','#f6d3b3','#eab98d','#d39b6b','#a9714b','#7a4a30','#d9a85a','#f4f0e8','#9aa0a8','#3a3440','#f0a050'];
+const HATCOLS=['#e0447a','#4a90e2','#3ecf8e','#ffd54a','#a05ad8','#2a2a3a','#f4f0e8','#e8452c'];
+const HAIRNAMES=['短髮','長髮','雙馬尾','丸子頭','刺蝟頭','高馬尾','平頭','側分油頭','捲髮','爆炸頭','龐克頭','長瀏海','武士髻','無（光頭）'];
 const HAIRS=['#2a1a14','#6b3f24','#b5651d','#e8c05a','#d8d8e8','#ff6b9d','#6b8cff','#3ecf8e','#a05ad8','#e8452c'];
 const EYES=['#3b82f6','#2a1a14','#6b3f24','#3ecf8e','#a05ad8','#e8452c','#ffb347','#5ad8e8'];
 const BROWS=['#2a1a14','#4a2e1c','#8a5a2b','#d8b050','#c8c8d8','#ff6b9d','#6b8cff','#a05ad8'];
 const CRE=[
+ {t:'chips',k:'species',l:'種族',o:['人類','小狗狗','小貓咪']},
  {t:'chips',k:'shape',l:'臉型',o:['圓臉','方臉','瓜子臉']},
  {t:'range',k:'fw',l:'臉寬',min:-2,max:2},
  {t:'color',k:'skin',l:'膚色',p:SKINS},
- {t:'chips',k:'hairStyle',l:'髮型',o:['短髮','長髮','雙馬尾','丸子頭','刺蝟頭','高馬尾']},
+ {t:'chips',k:'hairStyle',l:'髮型',o:HAIRNAMES},
  {t:'color',k:'hair',l:'髮色',p:HAIRS},
  {t:'chips',k:'eyeStyle',l:'眼型',o:['圓眼','笑眼','閃亮眼']},
  {t:'range',k:'eyeSize',l:'眼睛大小',min:2,max:3},
@@ -1179,12 +1543,15 @@ const CRE=[
  {t:'color',k:'brow',l:'眉毛顏色',p:BROWS},
  {t:'chips',k:'mouth',l:'嘴型',o:['微笑','大笑','小圓嘴']},
  {t:'range',k:'mouthY',l:'嘴巴高低',min:-1,max:1},
- {t:'chips',k:'blush',l:'腮紅',o:['無','有']}
+ {t:'chips',k:'blush',l:'腮紅',o:['無','有']},
+ {t:'chips',k:'hat',l:'帽子',o:['無','棒球帽','毛帽','牛仔帽','皇冠','巫師帽']},
+ {t:'color',k:'hatColor',l:'帽子顏色',p:HATCOLS},
+ {t:'chips',k:'glasses',l:'眼鏡',o:['無','墨鏡','圓框眼鏡','粉紅墨鏡','海盜眼罩']}
 ];
 let cLook=null,cIsNew=true,cFrame=0,cTimer=null;
 function openCreate(isNew,fromShop){
  cIsNew=isNew;cFromShop=!!fromShop;
- cLook=JSON.parse(JSON.stringify(isNew?DEF_LOOK:save.look));
+ cLook=Object.assign({},DEF_LOOK,JSON.parse(JSON.stringify(isNew?DEF_LOOK:save.look)));
  showScreen('#sCreate');buildCreateUI();drawCreate();
  clearInterval(cTimer);cTimer=setInterval(()=>{if(!$('#sCreate').classList.contains('show')){clearInterval(cTimer);return}cFrame++;drawCreatePreview()},300);
 }
@@ -1192,13 +1559,14 @@ let cFromShop=false;
 function genderDefaults(g){
  if(g==='f')Object.assign(cLook,{g:'f',hairStyle:1,hair:'#6b3f24',eyeStyle:2,eyeSize:3,shape:0,browStyle:0,mouth:0,blush:1});
  else Object.assign(cLook,{g:'m',hairStyle:0,hair:'#2a1a14',eyeStyle:0,eyeSize:2,shape:1,browStyle:1,mouth:1,blush:0});
+ if(cLook.species>0)cLook.hairStyle=13;
 }
 function buildCreateUI(){
  $$('.gender .btn').forEach(b=>b.classList.toggle('sel',b.dataset.g===cLook.g));
  const box=$('#cOpts');box.innerHTML='';
  for(const o of CRE){
   const row=document.createElement('div');row.className='row';row.innerHTML='<b>'+o.l+'</b>';
-  if(o.t==='chips')o.o.forEach((name,i)=>{const b=document.createElement('button');b.className='chip'+(cLook[o.k]===i?' sel':'');b.textContent=name;b.onclick=()=>{cLook[o.k]=i;buildCreateUI();drawCreate()};row.appendChild(b)});
+  if(o.t==='chips')o.o.forEach((name,i)=>{const b=document.createElement('button');b.className='chip'+(cLook[o.k]===i?' sel':'');b.textContent=name;b.onclick=()=>{cLook[o.k]=i;if(o.k==='species'){if(i>0)cLook.hairStyle=13;else if(cLook.hairStyle===13)cLook.hairStyle=cLook.g==='f'?1:0}buildCreateUI();drawCreate()};row.appendChild(b)});
   else if(o.t==='range'){const r=document.createElement('input');r.type='range';r.min=o.min;r.max=o.max;r.step=1;r.value=cLook[o.k];r.oninput=()=>{cLook[o.k]=+r.value;drawCreate()};row.appendChild(r)}
   else{
    o.p.forEach(c=>{const b=document.createElement('button');b.className='sw'+(cLook[o.k]===c?' sel':'');b.style.background=c;b.onclick=()=>{cLook[o.k]=c;buildCreateUI();drawCreate()};row.appendChild(b)});
@@ -1208,8 +1576,8 @@ function buildCreateUI(){
  }
 }
 function drawCreate(){
- const c=$('#pvHead').getContext('2d');c.imageSmoothingEnabled=false;c.clearRect(0,0,240,288);
- const s=12,ox=36,oy=60;
+ const c=$('#pvHead').getContext('2d');c.imageSmoothingEnabled=false;c.clearRect(0,0,240,340);
+ const s=12,ox=36,oy=130;
  const r=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(ox+x*s,oy+y*s,w*s,h*s)};
  /* 肩膀 */
  const tc=cLook.g==='f'?'#ff7fa8':'#4a90e2';
@@ -1218,23 +1586,24 @@ function drawCreate(){
  drawCreatePreview();
 }
 function drawCreatePreview(){
- const c=$('#pvBody').getContext('2d');c.imageSmoothingEnabled=false;c.clearRect(0,0,180,180);
+ const c=$('#pvBody').getContext('2d');c.imageSmoothingEnabled=false;c.clearRect(0,0,180,210);
  const sv=save;save={look:cLook,up:(save&&save.up)||{weapon:0,armor:0,boots:0,fire:0,magnet:0}};
  const old=PCACHE;PCACHE={};
  const dirs=['down','right','up','left'],dir=dirs[(cFrame/4|0)%4],sp=playerSprite(dir,cFrame%2?1:2);
  PCACHE=old;save=sv;
- c.drawImage(sp.c,0,0,sp.w*2.6,sp.h*2.6);
+ c.drawImage(sp.c,0,0,sp.w*2.5,sp.h*2.5);
 }
 $$('.gender .btn').forEach(b=>b.onclick=()=>{genderDefaults(b.dataset.g);buildCreateUI();drawCreate()});
 $('#cRand').onclick=()=>{
  const g=Math.random()<.5?'m':'f';genderDefaults(g);
- Object.assign(cLook,{shape:rint(0,2),fw:rint(-1,1),skin:pick(SKINS),hairStyle:rint(0,5),hair:pick(HAIRS),eyeStyle:rint(0,2),eyeSize:rint(2,3),eyeGap:rint(1,3),eyeY:rint(-1,1),eye:pick(EYES),browStyle:rint(0,2),brow:pick(BROWS),mouth:rint(0,2),mouthY:rint(-1,1),blush:rint(0,1)});
+ Object.assign(cLook,{shape:rint(0,2),fw:rint(-1,1),skin:pick(SKINS),hairStyle:rint(0,13),hair:pick(HAIRS),eyeStyle:rint(0,2),eyeSize:rint(2,3),eyeGap:rint(1,3),eyeY:rint(-1,1),eye:pick(EYES),browStyle:rint(0,2),brow:pick(BROWS),mouth:rint(0,2),mouthY:rint(-1,1),blush:rint(0,1),species:Math.random()<.3?rint(1,2):0,hat:rint(0,5),hatColor:pick(HATCOLS),glasses:rint(0,4)});
+ if(cLook.species>0)cLook.hairStyle=13;
  buildCreateUI();drawCreate();
 };
 $('#cBack').onclick=()=>{clearInterval(cTimer);cFromShop?openShop():toTitle()};
 $('#cDone').onclick=()=>{
  clearInterval(cTimer);
- if(cIsNew){save=newSave(cLook);writeSave();invalidate();enterHub('歡迎來到恐龍村！走到洞穴或婆婆旁邊，按「攻擊」互動')}
+ if(cIsNew){save=newSave(cLook);writeSave();invalidate();showMsg('📜 龍之石的傳說','很久很久以前，世界上有一顆守護大海與大地的「龍之石」。<br>有一天，五位魔王把它打碎，每人搶走一塊，藏在五座島上。<br><br>你是被選中的冒險者！<br>從恐龍島出發，打敗魔王、集齊五塊碎片，拯救世界吧！',[['出發！','go',()=>enterHub('歡迎來到恐龍村！走到洞穴、婆婆或爺爺旁邊，按「攻擊」互動')]])}
  else{save.look=cLook;writeSave();invalidate();cFromShop?(openShop()):toTitle()}
 };
 
@@ -1258,12 +1627,10 @@ syncAudioUI();
 
 /* ============ 啟動 ============ */
 save=loadSave();
-if(save&&!save.up)save.up={weapon:0,armor:0,boots:0,fire:0,magnet:0};
-if(save&&!save.cleared)save.cleared={};
-if(save&&!save.island)save.island=1;
+if(save)migrate(save);
 toTitle();drawTitleArt();
 document.fonts&&document.fonts.ready.then(drawTitleArt);
-window.__dbg={step:(n=1,dt=1/60)=>{for(let i=0;i<n;i++)update(dt);draw()},enterHub,interact,startLevel,get G(){return G},get P(){return P},get save(){return save},openShop};
+window.__dbg={dlg:DLG,levelInfo,ISL,openPort,openDialog,showNode,step:(n=1,dt=1/60)=>{for(let i=0;i<n;i++)update(dt);draw()},enterHub,interact,startLevel,get G(){return G},get P(){return P},get save(){return save},openShop};
 </script>
 </body>
 </html>
